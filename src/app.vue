@@ -16,11 +16,13 @@
         <button class="delete-btn" @click="deleteText(index)">删除</button>
       </div>
     </div>
+    <ZhihuQuestion :texts="texts" />
   </div>
 </template>
 
 <script>
 import { ref } from 'vue'
+import ZhihuQuestion from './components/ZhihuQuestion.vue';
 
 export default {
   name: 'App',
