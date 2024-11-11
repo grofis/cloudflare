@@ -13,11 +13,14 @@
                     <a-list-item-meta>
                         <template #description>
                             <div>
-                                {{ `${item.reaction.new_answer_num}/${item.reaction.answer_num}` }} 
+                                {{ `答案:${item.reaction.new_answer_num}/${item.reaction.answer_num} ` }} 
+                                {{ `赞同:${item.reaction.new_upvote_num}/${item.reaction.upvote_num} ` }} 
+                                {{ `关注:${item.reaction.new_follow_num}/${item.reaction.follow_num} ` }} 
+                                {{ `浏览:${item.reaction.new_pv}/${item.reaction.pv} ` }} 
                             </div>
                         </template>
                         <template #title>
-                            <a href="https://www.antdv.com/">{{ item.question.title }}</a>
+                            <a :href="item.question.url" target="_blank">{{ item.question.title }}</a>
                             <a-tag v-for="tag in item.question.topics" :key="tag" color="default">
                                 {{ tag.name }}
                             </a-tag>
@@ -37,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref,onMounted } from 'vue';
 const initLoading = ref(false);
 const loading = ref(false);
 
@@ -177,11 +180,15 @@ const colorMap = {
 const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
-        const response = await fetch('YOUR_API_URL_HERE'); // Replace with your API URL
+        const response = await fetch('https://worker.qchunbhuil.workers.dev/data'); // Replace with your API URL
         const data = await response.json();
-        
+        console.log('length:', data)
+        // data.map(item=>{
+        //     return {}
+        // })
         // Assuming the data structure matches the expected format
-        questions.value = data.questions; // Update questions with fetched data
+        questions.value.length = 0;
+        questions.value.push(...data); // Update questions with fetched data
     } catch (error) {
         console.error('Error fetching questions:', error);
     } finally {
