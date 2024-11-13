@@ -22,5 +22,10 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist'
+  },
+  server: {
+    headers: {
+      'Cache-Control': 'no-store',
+    }
   }
 })
