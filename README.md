@@ -7,4 +7,4 @@ npm run dev
 # git提交代码命令
 git add .
 git commit -m "你的提交信息"
-git push origin 
+git push origin main

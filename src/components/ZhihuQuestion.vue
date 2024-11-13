@@ -11,6 +11,15 @@
                 <button class="delete-btn" @click="deleteText(index)">删除</button>
             </div>
         </div>
+        <div class="radio-group-container"> <!-- 新增的容器 -->
+            <a-space :size="[0, 8]" wrap>
+                <a-checkable-tag v-for="(tag, index) in tagsData" :key="tag.name" v-model:checked="selectTags[index]"
+                    @change="checked => handleChange(tag, checked)"
+                    :style="{ backgroundColor: getTagBackgroundColor(tag) }">
+                    {{ tag.order ? `${tag.name}${tag[tag.order]}` : tag.name }}
+                </a-checkable-tag>
+            </a-space>
+        </div>
         <a-list class="demo-loadmore-list" :loading="initLoading" item-layout="horizontal" :data-source="questions">
             <template #loadMore>
                 <div v-if="!initLoading && !loading"
@@ -48,19 +57,77 @@
                     </a-skeleton>
                 </a-list-item>
             </template>
-        </a-list> 
+        </a-list>
     </div>
 </template>
 
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, reactive } from 'vue';
 const initLoading = ref(false);
 const loading = ref(false);
+
+
 
 const title = ref('文字记录器')
 const inputText = ref('')
 const texts = ref([])
+
+const tagsData = reactive([
+    { name: '默认', asc: '', desc: '',  type: 'default', order: null },
+    { name: '答案', asc: '少', desc: '多', type: 'answer_num', order: null },
+    { name: '点赞', asc: '少', desc: '多', type: 'new_upvote_num', order: null },
+    { name: '关注', asc: '少', desc: '多', type: 'new_follow_num', order: null },
+    { name: '浏览', asc: '少', desc: '多', type: 'new_pv', order: null },
+    { name: '涨粉', asc: '少', desc: '多', type: 'num', order: null }
+]);
+const selectTags = reactive([false, false, false, false, false, false]);
+const handleChange = (tag, checked) => {
+    // 更新 selectTags，确保只有当前选中的标签为 true
+    selectTags.forEach((_, index) => {
+        if (tagsData[index] === tag) {
+            if (tagsData[index].order === 'asc') {
+                tagsData[index].order = 'desc';
+                selectTags[index] = true; // 当前选中的标签保持其 checked 状态
+            } else if (tagsData[index].order === 'desc') {
+                tagsData[index].order = null;
+                selectTags[index] = false;
+            } else {
+                tagsData[index].order = 'asc';
+                selectTags[index] = true;
+            }
+        } else {
+            selectTags[index] = false; // 其他标签的 checked 状态为 false
+            tagsData[index].order = null; // 其他标签的 order 设置为 null
+        }
+    });
+
+    // 根据选中的标签进行排序
+    const selectedTag = tagsData.find((t, index) => selectTags[index]);
+    if (selectedTag && selectedTag.type !== 'default') {
+        sortQuestions(selectedTag.type, selectedTag.order);
+    } else {
+        questions.value.length = 0;
+        questions.value.push(...srcData.value);
+    }
+    console.log(tag, checked);
+};
+
+const sortQuestions = (type, order) => {
+    if (order === null) {
+        // 如果 order 为 null，保持原有顺序
+        questions.value.length = 0;
+        questions.value.push(...srcData.value);
+        return;
+    }
+    questions.value.sort((a, b) => {
+        if (order === 'asc') {
+            return a['reaction'][type] - b['reaction'][type];
+        } else {
+            return b['reaction'][type] - a['reaction'][type];
+        }
+    });
+};
 
 const addText = () => {
     if (inputText.value.trim()) {
@@ -73,10 +140,8 @@ const deleteText = (index) => {
     texts.value.splice(index, 1)
 }
 
-const questions = ref(
-    [
-    ]
-);
+const questions = ref([]);
+const srcData = ref([]);
 
 const colorMap = {
     processing: '#108ee9',
@@ -109,12 +174,21 @@ const fetchQuestions = async () => {
         const response = await fetch('https://worker.qchunbhuil.workers.dev/data'); // Replace with your API URL
         const data = await response.json();
         console.log('length:', data)
-        // data.map(item=>{
-        //     return {}
-        // })
+        data.map(item=>{
+            let temp = item.reaction.new_pv+item.reaction.new_follow_num*1.5+item.reaction.new_upvote_num*1.2
+            let num = 0
+            if(item.reaction.new_answer_num>0){
+                num = temp/item.reaction.new_answer_num
+            }
+            item.reaction.num = num
+            return item
+        })
         // Assuming the data structure matches the expected format
         questions.value.length = 0;
         questions.value.push(...data); // Update questions with fetched data
+        srcData.value.length = 0;
+        srcData.value.push(...data);
+        console.log(questions.value)
     } catch (error) {
         console.error('Error fetching questions:', error);
     } finally {
@@ -147,6 +221,17 @@ const getColorByNum = (num) => {
     const colorKey = Object.keys(colorMap)[remainder];
     return colorMap[colorKey];
 };
+
+// 根据标签的类型和排序状态返回背景颜色
+const getTagBackgroundColor = (tag) => {
+    const order = tag.order;
+    if (order === 'asc') {
+        return '#f50'; // asc 背景颜色
+    } else if (order === 'desc') {
+        return '#2db7f5'; // desc 背景颜色
+    }
+    return ''; // 默认背景颜色
+};
 </script>
 
 <style scoped>
@@ -154,6 +239,12 @@ const getColorByNum = (num) => {
     max-width: 600px;
     margin: 0 auto;
     padding: 20px 5px;
+}
+
+.radio-group-container {
+    display: flex;
+    justify-content: flex-end;
+    /* 使内容居右 */
 }
 
 h1 {
@@ -229,5 +320,10 @@ button:hover {
 
 :deep(.ant-spin-container .ant-list-items .ant-list-item) {
     padding: 10px 0px;
+}
+
+.radio-group-container {
+    display: flex;
+    justify-content: flex-end;
 }
 </style>
