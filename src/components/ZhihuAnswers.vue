@@ -1,227 +1,174 @@
 <template>
-    <a-list class="demo-loadmore-list" :loading="initLoading" item-layout="horizontal" :data-source="questions">
-        <template #loadMore>
-            <div v-if="!initLoading && !loading"
-                :style="{ textAlign: 'center', marginTop: '12px', height: '32px', lineHeight: '32px' }">
-                <a-button @click="onLoadMore">loading more</a-button>
-            </div>
-        </template>
-        <template #renderItem="{ item }">
-            <a-list-item>
+    <div>
+        <h2>{{ questionData?.question?.title }}</h2>
+        <!-- 使用传递过来的数据渲染内容 -->
+        <div class="question-stats">
+            <p>答案数：{{ questionData?.reaction?.answer_num }}</p>
+            <p>浏览数：{{ formatNumber(questionData?.reaction?.pv) }}</p>
+            <!-- 其他数据展示 -->
+        </div>
+        <a-list item-layout="horizontal" size="large" :pagination="pagination" :data-source="listData">
 
-                <a-skeleton avatar :title="false" :loading="!!item.loading" active>
-                    <a-list-item-meta>
-                        <template #description>
-                            <div>
-                                {{ `答案:${item.reaction.new_answer_num}/${item.reaction.answer_num} ` }} 
-                                {{ `赞同:${item.reaction.new_upvote_num}/${item.reaction.upvote_num} ` }} 
-                                {{ `关注:${item.reaction.new_follow_num}/${item.reaction.follow_num} ` }} 
-                                {{ `浏览:${item.reaction.new_pv}/${item.reaction.pv} ` }} 
-                            </div>
-                        </template>
+            <template #renderItem="{ item }">
+                <a-list-item key="item.title">
+                    <template #actions>
+                        <span v-for="{ icon, text } in item.actions" :key="icon">
+                            <component :is="icon" style="margin-right: 8px" />
+                            {{ text }}
+                        </span>
+                    </template>
+                    <template #extra v-if="item.thumbnail_info.count>0">
+                        <img width="272" alt="logo"
+                            :src="item.thumbnail_info.thumbnails[0]" />
+                    </template>
+                    <a-list-item-meta :description="item.author ? item.author.headline : ''">
                         <template #title>
-                            <a :href="item.question.url" target="_blank">{{ item.question.title }}</a>
-                            <a-tag v-for="tag in item.question.topics" :key="tag" color="default">
-                                {{ tag.name }}
-                            </a-tag>
+                            <a :href="item.name">{{ item.author.name }}</a>
                         </template>
-                        <template #avatar>
-                            <a-avatar size="large"
-                                :style="{ backgroundColor: getColorByNum(item.reaction.answer_num), verticalAlign: 'middle' }"
-                                :gap="4">
-                                {{ item.reaction.answer_num }}
-                            </a-avatar>
-                        </template>
+                        <template #avatar><a-avatar :src="item.author.avatar_url" /></template>
                     </a-list-item-meta>
-                </a-skeleton>
-            </a-list-item>
-        </template>
-    </a-list>
+                    {{ item.excerpt }}
+                </a-list-item>
+            </template>
+        </a-list>
+    </div>
 </template>
 
 <script setup>
-import { ref,onMounted } from 'vue';
-const initLoading = ref(false);
-const loading = ref(false);
+import { ref, onMounted, reactive } from 'vue';
+import { useRoute } from 'vue-router';
 
-const questions = ref(
-    [
-        {
-            "question": {
-                "url": "https://www.zhihu.com/question/2920707420",
-                "created": 1730544740,
-                "updated_time": 1730544740,
-                "title": "为什么电脑厂商用了二十多年时间才发现电源应该放在机箱下部？电源下置这么显而易见的结构这么晚才出现？",
-                "highlight_title": "",
-                "type": "question",
-                "id": "2920707420",
-                "token": 2920707420,
-                "is_recent_hot": false,
-                "have_answer": false,
-                "question_answer_url": "",
-                "topics": [
-                    {
-                        "url_token": 19550286,
-                        "name": "个人电脑"
-                    },
-                    {
-                        "url_token": 19552747,
-                        "name": "英特尔 (Intel)"
-                    },
-                    {
-                        "url_token": 19553309,
-                        "name": "中央处理器 (CPU)"
-                    }
-                ],
-                "label": "",
-                "creator": {
-                    "url_token": "",
-                    "name": ""
-                }
-            },
-            "reaction": {
-                "new_pv": 89342,
-                "new_pv_7_days": 0,
-                "new_follow_num": 64,
-                "new_follow_num_7_days": 0,
-                "new_answer_num": 18,
-                "new_answer_num_7_days": 0,
-                "new_upvote_num": 438,
-                "new_upvote_num_7_days": 0,
-                "pv": 620296,
-                "follow_num": 294,
-                "answer_num": 79,
-                "upvote_num": 1176,
-                "pv_incr_rate": "0.00%",
-                "head_percent": "0.00%",
-                "new_pv_yesterday": 89342,
-                "new_pv_t_yesterday": 89342,
-                "score": 7.701924999999999,
-                "score_level": 4,
-                "text": ""
-            }
-        },
-        {
-            "question": {
-                "url": "https://www.zhihu.com/question/3006118937",
-                "created": 1730625504,
-                "updated_time": 1730625504,
-                "title": "如何评价牛津大学女数学博士@牛津kate朱朱？",
-                "highlight_title": "",
-                "type": "question",
-                "id": "3006118937",
-                "token": 3006118937,
-                "is_recent_hot": false,
-                "have_answer": false,
-                "question_answer_url": "",
-                "topics": [
-                    {
-                        "url_token": 19687143,
-                        "name": "数学博士"
-                    },
-                    {
-                        "url_token": 19704923,
-                        "name": "牛津大学 (University of Oxford)"
-                    },
-                    {
-                        "url_token": 20214391,
-                        "name": "小红书"
-                    }
-                ],
-                "label": "新题",
-                "creator": {
-                    "url_token": "",
-                    "name": ""
-                }
-            },
-            "reaction": {
-                "new_pv": 21788,
-                "new_pv_7_days": 0,
-                "new_follow_num": 14,
-                "new_follow_num_7_days": 0,
-                "new_answer_num": 6,
-                "new_answer_num_7_days": 0,
-                "new_upvote_num": 593,
-                "new_upvote_num_7_days": 0,
-                "pv": 343502,
-                "follow_num": 185,
-                "answer_num": 65,
-                "upvote_num": 3750,
-                "pv_incr_rate": "0.00%",
-                "head_percent": "0.00%",
-                "new_pv_yesterday": 21788,
-                "new_pv_t_yesterday": 21788,
-                "score": 7.231037499999999,
-                "score_level": 4,
-                "text": ""
-            }
-        }
-    ]
-);
+import { StarOutlined, LikeOutlined, MessageOutlined } from '@ant-design/icons-vue';
 
-const colorMap = {
-    processing: '#108ee9',
-    success: '#00a854',
-    error: '#f44336',
-    warning: '#ffbf00',
-    magenta: '#eb2f96',
-    red: '#f5222d',
-    volcano: '#fa541c',
-    orange: '#fa8c16',
-    gold: '#faad14',
-    lime: '#a0d911',
-    green: '#52c41a',
-    cyan: '#13c2c2',
-    blue: '#1890ff',
-    geekblue: '#2f54eb',
-    purple: '#722ed1'
+let listData = reactive([]);
+// for (let i = 0; i < 3; i++) {
+//     listData.push({
+//         href: 'https://www.antdv.com/',
+//         title: `ant design vue part ${i}`,
+//         author: { avatar_url: 'https://joeschmoe.io/api/v1/random' },
+//         description:
+//             'Ant Design, a design language for background applications, is refined by Ant UED Team.',
+//         content:
+//             'We supply a series of design principles, practical patterns and high quality design resources (Sketch and Axure), to help people create their product prototypes beautifully and efficiently.',
+//     });
+// }
+const pagination = {
+    onChange: page => {
+        console.log(page);
+    },
+    pageSize: 100,
 };
+const actions = [
+    {
+        icon: StarOutlined,
+        text: '156',
+    },
+    {
+        icon: LikeOutlined,
+        text: '156',
+    },
+    {
+        icon: MessageOutlined,
+        text: '2',
+    },
+];
 
-const fetchQuestions = async () => {
-    initLoading.value = true; // Set loading state
+const route = useRoute();
+const questionId = route.params.id;
+const questionData = ref(null);
+
+onMounted(() => {
+    // 从 localStorage 获取数据
+    const storedData = localStorage.getItem('questionData');
+    if (storedData) {
+        questionData.value = JSON.parse(storedData);
+        // 获取数据后清除 localStorage，避免数据残留
+        localStorage.removeItem('questionData');
+    }
+    // startGetData()
+    fetchQuestionData();
+
+    console.log('data is', questionId, questionData.value);
+});
+
+const startGetData = async () => {
+    // initLoading.value = true; // Set loading state
     try {
-        const response = await fetch('https://worker.qchunbhuil.workers.dev/data'); // Replace with your API URL
+        //http://localhost:8787/answer?id=633538248
+        const response = await fetch('http://localhost:8787/question?id=' + questionId); // Replace with your API URL
         const data = await response.json();
         console.log('length:', data)
-        // data.map(item=>{
-        //     return {}
-        // })
+        data.map(item => {
+            // let temp = item.reaction.new_pv+item.reaction.new_follow_num*1.5+item.reaction.new_upvote_num*1.2
+            // let num = 0
+            // if(item.reaction.new_answer_num>0){
+            //     num = temp/item.reaction.new_answer_num
+            // }
+            // item.reaction.num = num
+            // return item
+        })
         // Assuming the data structure matches the expected format
-        questions.value.length = 0;
-        questions.value.push(...data); // Update questions with fetched data
+
     } catch (error) {
         console.error('Error fetching questions:', error);
     } finally {
-        initLoading.value = false; // Reset loading state
+        // initLoading.value = false; // Reset loading state
     }
 };
 
-onMounted(() => {
-    fetchQuestions(); // Fetch questions when the component is mounted
-});
+const fetchQuestionData = async () => {
+    // initLoading.value = true; // Set loading state
+    try {
+        //http://localhost:8787/answer?id=633538248
+        const response = await fetch('http://localhost:8787/answer?id=' + questionId); // Replace with your API URL
+        const data = await response.json();
 
-const onLoadMore = () => { }
+        data.map(item => {
+            let reaction = JSON.parse(item.reaction)
+            let length = JSON.parse(item.reactions).length
+            // console.log(reaction, length)
+            Object.assign(item, reaction);
 
-const getColorByNum = (num) => {
-    const remainder = num % 10;
-    const colorKey = Object.keys(colorMap)[remainder];
-    return colorMap[colorKey];
+            let actions = [
+                {
+                    icon: StarOutlined,
+                    text: item.thanks_count,
+                },
+                {
+                    icon: LikeOutlined,
+                    text: item.voteup_count,
+                },
+                {
+                    icon: MessageOutlined,
+                    text: item.comment_count,
+                },
+            ];
+            item.actions = actions
+
+
+            // let temp = item.reaction.new_pv+item.reaction.new_follow_num*1.5+item.reaction.new_upvote_num*1.2
+            // let num = 0
+            // if(item.reaction.new_answer_num>0){
+            //     num = temp/item.reaction.new_answer_num
+            // }
+            // item.reaction.num = num
+            // return item
+        })
+        // Assuming the data structure matches the expected format
+        listData.length = 0
+        listData.push(...data)
+        console.log('listData', listData)
+    } catch (error) {
+        console.error('Error fetching questions:', error);
+    } finally {
+        // initLoading.value = false; // Reset loading state
+    }
+};
+
+const formatNumber = (num) => {
+    if (num >= 10000) {
+        return (num / 10000).toFixed(1) + '万';
+    }
+    return num;
 };
 </script>
-
-<style scoped>
-.question-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.stats-container {
-    display: flex;
-    gap: 16px;
-}
-
-.rating {
-    margin: 8px 0;
-}
-</style>

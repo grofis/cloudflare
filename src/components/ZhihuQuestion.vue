@@ -28,8 +28,7 @@
                 </div>
             </template>
             <template #renderItem="{ item }">
-                <a-list-item>
-
+                <a-list-item @click="handleItemClick(item)">
                     <a-skeleton avatar :title="false" :loading="!!item.loading" active>
                         <a-list-item-meta>
                             <template #description>
@@ -64,6 +63,8 @@
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+const router = useRouter();
 const initLoading = ref(false);
 const loading = ref(false);
 
@@ -231,6 +232,18 @@ const getTagBackgroundColor = (tag) => {
         return '#2db7f5'; // desc 背景颜色
     }
     return ''; // 默认背景颜色
+};
+
+const handleItemClick = (item) => {
+    // 先将数据存储到 localStorage
+    localStorage.setItem('questionData', JSON.stringify(item));
+    
+    const route = router.resolve({
+        name: 'Answers',
+        params: { id: item.question.id }
+    });
+    
+    window.open(route.href, '_blank');
 };
 </script>
 

@@ -1,19 +1,20 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import Question from '../components/ZhihuQuestion.vue'
-import Answer from '../components/ZhihuAnswers.vue'
+import Answers from '../components/ZhihuAnswers.vue'
 
 const routes = [
   
   {
-    path: '/Answer',
-    name: 'Answer',
-    component: Answer
-  },
-  {
     path: '/',
     name: 'Question',
     component: Question
+  },
+  {
+    path: '/answers/:id',
+    name: 'Answers',
+    component: Answers,
+    props: true
   }
 ]
 
