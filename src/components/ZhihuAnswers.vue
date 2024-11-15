@@ -125,7 +125,8 @@ const processAnswerData = (item) => {
 // ================ API 请求函数 ================
 const fetchQuestionData = async () => {
     try {
-        const response = await fetch(`http://localhost:8787/answer?id=${questionId}`);
+        const baseUrl = 'https://worker.qchunbhuil.workers.dev/' //localhost:8787
+        const response = await fetch(`${baseUrl}answer?id=${questionId}`);
         const data = await response.json();
 
         // 处理数据
