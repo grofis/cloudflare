@@ -1,12 +1,16 @@
 <template>
     <div>
-        <h2>{{ questionData?.question?.title }}</h2>
-        <!-- 使用传递过来的数据渲染内容 -->
-        <div class="question-stats">
-            <p>答案数：{{ questionData?.reaction?.answer_num }}</p>
-            <p>浏览数：{{ formatNumber(questionData?.reaction?.pv) }}</p>
-            <!-- 其他数据展示 -->
-        </div>
+        <a-typography>
+            <a-typography-text  strong :style="{ fontSize: '1.2em' }">{{ questionData?.question?.title }}</a-typography-text>
+            <a-typography-paragraph>
+                {{ questionData?.reaction?.answer_num }} 
+                <a-typography-text type="secondary">个回答·</a-typography-text>
+                
+                {{ formatNumber(questionData?.reaction?.pv) }} 
+                <a-typography-text type="secondary">浏览</a-typography-text>
+            </a-typography-paragraph>
+        </a-typography>
+
         <a-list item-layout="horizontal" size="large" :pagination="pagination" :data-source="listData">
 
             <template #renderItem="{ item }">
@@ -17,9 +21,8 @@
                             {{ text }}
                         </span>
                     </template>
-                    <template #extra v-if="item.thumbnail_info.count>0">
-                        <img width="272" alt="logo"
-                            :src="item.thumbnail_info.thumbnails[0]" />
+                    <template #extra v-if="item.thumbnail_info.count > 0">
+                        <img width="272" alt="logo" :src="item.thumbnail_info.thumbnails[0]" />
                     </template>
                     <a-list-item-meta :description="item.author ? item.author.headline : ''">
                         <template #title>
@@ -27,7 +30,7 @@
                         </template>
                         <template #avatar><a-avatar :src="item.author.avatar_url" /></template>
                     </a-list-item-meta>
-                    {{ item.excerpt }}
+                    {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }}
                 </a-list-item>
             </template>
         </a-list>
