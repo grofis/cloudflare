@@ -75,7 +75,7 @@ const inputText = ref('')
 const texts = ref([])
 
 const tagsData = reactive([
-    { name: '默认', asc: '', desc: '',  type: 'default', order: null },
+    { name: '默认', asc: '', desc: '', type: 'default', order: null },
     { name: '答案', asc: '少', desc: '多', type: 'answer_num', order: null },
     { name: '点赞', asc: '少', desc: '多', type: 'new_upvote_num', order: null },
     { name: '关注', asc: '少', desc: '多', type: 'new_follow_num', order: null },
@@ -172,14 +172,21 @@ const formatNumber = (num) => {
 const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
-        const response = await fetch('https://worker.qchunbhuil.workers.dev/data'); // Replace with your API URL
+        const response = await fetch('https://worker.qchunbhuil.workers.dev/zhihu/data', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            // 明确指定 CORS 模式
+            mode: 'cors'
+        }); // Replace with your API URL
         const data = await response.json();
         console.log('length:', data)
-        data.map(item=>{
-            let temp = item.reaction.new_pv+item.reaction.new_follow_num*1.5+item.reaction.new_upvote_num*1.2
+        data.map(item => {
+            let temp = item.reaction.new_pv + item.reaction.new_follow_num * 1.5 + item.reaction.new_upvote_num * 1.2
             let num = 0
-            if(item.reaction.new_answer_num>0){
-                num = temp/item.reaction.new_answer_num
+            if (item.reaction.new_answer_num > 0) {
+                num = temp / item.reaction.new_answer_num
             }
             item.reaction.num = num
             return item
@@ -200,7 +207,14 @@ const fetchQuestions = async () => {
 const fetchData = async () => {
     initLoading.value = true; // Set loading state
     try {
-        const response = await fetch('https://worker.qchunbhuil.workers.dev/zhihu'); // Replace with your API URL
+        const response = await fetch('https://worker.qchunbhuil.workers.dev/zhihu', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            // 明确指定 CORS 模式
+            mode: 'cors'
+        }); // Replace with your API URL
         const data = await response.json();
         console.log('length:', data)
 
@@ -237,12 +251,12 @@ const getTagBackgroundColor = (tag) => {
 const handleItemClick = (item) => {
     // 先将数据存储到 localStorage
     localStorage.setItem('questionData', JSON.stringify(item));
-    
+
     const route = router.resolve({
         name: 'Answers',
         params: { id: item.question.id }
     });
-    
+
     window.open(route.href, '_blank');
 };
 </script>
