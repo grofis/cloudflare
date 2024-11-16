@@ -5,7 +5,7 @@
         <!-- <a-card :title="item.title">Card content</a-card> -->
         <a-card hoverable>
           <template #cover>
-            <img alt="example" :src="ensureHttps(item.picture)" />
+            <img :alt="item.stage" :src="item.picture" referrerpolicy="no-referrer"/>
           </template>
           <a-card-meta :title="item.title">
             <template #description>{{ item.stage.replace(/\s+/g, '') }}</template>
