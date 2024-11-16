@@ -18,7 +18,7 @@
                 <a-radio-button value="newest">最新</a-radio-button>
             </a-radio-group>
         </div>
-        <a-list item-layout="horizontal" size="large" :data-source="listData">
+        <a-list item-layout="vertical" size="large" :data-source="listData">
 
             <template #renderItem="{ item }">
                 <a-list-item key="item.title">
@@ -43,7 +43,8 @@
                         </template>
                         <template #avatar><a-avatar :src="item.author.avatar_url" /></template>
                     </a-list-item-meta>
-                    {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }}
+                    <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
+                    {{ item.excerpt }}
                     <a :href="`${questionData.question.url}/answer/${item.answer_id}`" target="_blank">跳转</a>
                 </a-list-item>
             </template>
@@ -195,4 +196,15 @@ onMounted(() => {
 }
 
 
+:deep(.ant-spin-container .ant-list-items .ant-list-item) {
+    padding: 8px;
+}
+
+:deep(.ant-list-item-meta-title), :deep(.ant-list-item .ant-list-item-meta) {
+    margin-bottom: 4px;
+}
+
+:deep(.ant-list .ant-list-item .ant-list-item-meta .ant-list-item-meta-avatar) {
+    margin-inline-end: 8px;
+}
 </style>

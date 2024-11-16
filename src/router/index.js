@@ -2,7 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Question from '../components/ZhihuQuestion.vue'
 import Answers from '../components/ZhihuAnswers.vue'
-
+import People from '../components/People.vue'
 const routes = [
   
   {
@@ -15,6 +15,11 @@ const routes = [
     name: 'Answers',
     component: Answers,
     props: true
+  },
+  {
+    path: '/people',
+    name: 'People',
+    component: People
   }
 ]
 
