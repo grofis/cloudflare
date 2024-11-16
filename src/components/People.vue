@@ -5,7 +5,7 @@
         <!-- <a-card :title="item.title">Card content</a-card> -->
         <a-card hoverable>
           <template #cover>
-            <img alt="example" :src="item.picture" />
+            <img alt="example" :src="ensureHttps(item.picture)" />
           </template>
           <a-card-meta :title="item.title">
             <template #description>{{ item.stage.replace(/\s+/g, '') }}</template>
@@ -34,4 +34,16 @@ onMounted(() => {
   // 如果使用方法2，异步加载
   // loadPeopleData();
 });
+
+const ensureHttps = (url) => {
+  if (!url) return '';
+  // 方法1：直接替换 http 为 https
+  return url.replace(/^http:/, 'https:');
+  
+  // 方法2：使用代理服务
+  // return `https://your-proxy.com/image?url=${encodeURIComponent(url)}`;
+  
+  // 方法3：使用相对协议
+  // return url.replace(/^http:/, '');
+};
 </script>
