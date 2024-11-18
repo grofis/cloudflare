@@ -127,6 +127,7 @@ const processAnswerData = (item) => {
 const fetchQuestionData = async () => {
     try {
         const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
+        // const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
         const response = await fetch(`${baseUrl}answer?id=${questionId}`);
         const data = await response.json();
 
