@@ -256,7 +256,8 @@ const handleItemClick = (item) => {
         name: 'Answers',
         params: { id: item.question.id }
     });
-
+    console.log('Generated URL:', route.href);  // 打印实际生成的 URL
+    
     window.open(route.href, '_blank');
 };
 </script>

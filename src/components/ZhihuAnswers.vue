@@ -39,13 +39,13 @@
                         <template #description>
                             <a-typography-text type="secondary">{{ item.author ? item.author.headline + '·' : '' }}{{
                                 item.time_ago_create }}发布{{ item.time_ago_create !== item.time_ago_update ?
-                                    '·' +item.time_ago_update+'更新' : '' }}</a-typography-text>
+                                    '·' + item.time_ago_update + '更新' : '' }}</a-typography-text>
                         </template>
                         <template #avatar><a-avatar :src="item.author.avatar_url" /></template>
                     </a-list-item-meta>
                     <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
                     {{ item.excerpt }}
-                    <a :href="`${questionData.question.url}/answer/${item.answer_id}`" target="_blank">跳转</a>
+                    <a :href="`${questionUrl}/${questionId.value}/answer/${item.answer_id}`" target="_blank">跳转</a>
                 </a-list-item>
             </template>
         </a-list>
@@ -59,7 +59,8 @@ import { StarOutlined, LikeOutlined, MessageOutlined } from '@ant-design/icons-v
 
 // ================ 状态定义 ================
 const route = useRoute();
-const questionId = route.params.id;
+let questionId = ref('');
+const questionUrl = 'https://www.zhihu.com/question/';
 const questionData = ref(null);
 const listData = reactive([]);
 const filters = ref('1');
@@ -124,11 +125,11 @@ const processAnswerData = (item) => {
 };
 
 // ================ API 请求函数 ================
-const fetchQuestionData = async () => {
+const fetchAnswersData = async () => {
     try {
-        const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
-        // const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
-        const response = await fetch(`${baseUrl}answer?id=${questionId}`);
+        // const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
+        const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
+        const response = await fetch(`${baseUrl}answer?id=${questionId.value}`);
         const data = await response.json();
 
         // 处理数据
@@ -177,6 +178,12 @@ const handleFilterChange = (e) => {
 
 // ================ 生命周期钩子 ================
 onMounted(() => {
+    // 打印完整 URL 以查看格式
+    console.log('Current URL:', window.location.pathname);
+    
+    questionId.value = route.params.id || window.location.pathname.split('/').pop();
+    
+
     // 获取存储的问题数据
     const storedData = localStorage.getItem('questionData');
     if (storedData) {
@@ -185,7 +192,7 @@ onMounted(() => {
     }
 
     // 获取答案数据
-    fetchQuestionData();
+    fetchAnswersData();
     console.log('data is', questionId, questionData.value);
 });
 </script>
@@ -201,7 +208,8 @@ onMounted(() => {
     padding: 8px;
 }
 
-:deep(.ant-list-item-meta-title), :deep(.ant-list-item .ant-list-item-meta) {
+:deep(.ant-list-item-meta-title),
+:deep(.ant-list-item .ant-list-item-meta) {
     margin-bottom: 4px;
 }
 
