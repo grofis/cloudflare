@@ -33,10 +33,10 @@
                         <a-list-item-meta>
                             <template #description>
                                 <div>
-                                    {{ `答案:${item.reaction.new_answer_num}/${item.reaction.answer_num} ` }}
-                                    {{ `赞同:${item.reaction.new_upvote_num}/${item.reaction.upvote_num} ` }}
-                                    {{ `关注:${item.reaction.new_follow_num}/${item.reaction.follow_num} ` }}
-                                    {{ `浏览:${formatNumber(item.reaction.new_pv)}/${formatNumber(item.reaction.pv)} ` }}
+                                    {{ `${item.reaction.new_answer_num}/${item.reaction.answer_num}回答· ` }}
+                                    {{ `${item.reaction.new_upvote_num}/${item.reaction.upvote_num}赞同·` }}
+                                    {{ `${item.reaction.new_follow_num}/${item.reaction.follow_num}关注·` }}
+                                    {{ `${formatNumber(item.reaction.new_pv)}/${formatNumber(item.reaction.pv)}浏览` }}
                                 </div>
                             </template>
                             <template #title>

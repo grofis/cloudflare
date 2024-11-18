@@ -45,7 +45,7 @@
                     </a-list-item-meta>
                     <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
                     {{ item.excerpt }}
-                    <a :href="`${questionUrl}/${questionId.value}/answer/${item.answer_id}`" target="_blank">跳转</a>
+                    <a :href="`${questionUrl}${questionId}/answer/${item.answer_id}`" target="_blank">跳转</a>
                 </a-list-item>
             </template>
         </a-list>
@@ -127,9 +127,12 @@ const processAnswerData = (item) => {
 // ================ API 请求函数 ================
 const fetchAnswersData = async () => {
     try {
-        const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
-        // const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
-        const response = await fetch(`${baseUrl}answer?id=${questionId.value}`);
+        // const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
+        const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
+        const url = `${baseUrl}answer?id=${questionId.value}`;
+        console.log('url:', url);
+        const response = await fetch(url);
+        console.log('response:', response);
         const data = await response.json();
 
         // 处理数据
