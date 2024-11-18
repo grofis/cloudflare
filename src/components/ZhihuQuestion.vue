@@ -2,8 +2,8 @@
     <div class="container">
         <h1>{{ title }}</h1>
         <div class="input-section">
-            <input v-model="inputText" placeholder="请输入文字..." @keyup.enter="addText">
-            <button @click="addText">添加文字</button>
+            <input v-model="inputText" placeholder="请输入关键词..." @keyup.enter="addText">
+            <button @click="addText">搜索</button>
         </div>
         <div class="text-list">
             <div v-for="(text, index) in texts" :key="index" class="text-item">
@@ -70,7 +70,7 @@ const loading = ref(false);
 
 
 
-const title = ref('文字记录器')
+const title = ref('知乎说')
 const inputText = ref('')
 const texts = ref([])
 

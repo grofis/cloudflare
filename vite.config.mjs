@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import Components from 'unplugin-vue-components/vite';
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers';
 import { fileURLToPath, URL } from 'node:url'
-
+import path from 'path'
 export default defineConfig({
   plugins: [
     vue(),
@@ -15,6 +15,7 @@ export default defineConfig({
       ],
     }),
   ],
+  publicDir: 'public',    // 指定静态资源目录
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
