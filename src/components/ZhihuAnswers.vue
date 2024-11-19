@@ -230,14 +230,14 @@ onMounted(() => {
     /* 使内部内容居中 */
     align-items: center;
     justify-content: center;
-    /* background-color: #FFFFCC; */
+    background-color: #FFFFCC;
     /* 举例背景色，根据需要调整 */
     text-align: center;
     /* 内容居中显示 */
-    border: 0px solid #faad14;
-    /* margin-bottom: 5px; */
-    /* padding: 8px 4px; */
-    position: relative;
+    border: 1px solid #faad14;
+    margin-bottom: 5px;
+    padding: 8px 4px;
+    /* position: relative; */
     box-sizing: border-box;
     /* 确保padding包括在内 */
     /* 使内部元素可以绝对定位 */
@@ -245,7 +245,7 @@ onMounted(() => {
 
 
 .square-image {
-    position: absolute;
+    /* position: absolute; */
     /* 绝对定位以充满父容器 */
     top: 0;
     left: 0;
