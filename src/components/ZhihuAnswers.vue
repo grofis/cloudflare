@@ -29,9 +29,10 @@
                             {{ text }}
                         </span>
                     </template>
-                    <template #extra v-if="item.thumbnail_info.count > 0">
-                        <img width="272" alt="logo" :src="item.thumbnail_info.thumbnails[0]" />
-                    </template>
+
+                    <!-- <template #extra v-if="item.thumbnail_info.count > 0">
+                        <img width="272" alt="logo" :src="item.thumbnail_info?.thumbnails[0]?.url" />
+                    </template> -->
                     <a-list-item-meta>
                         <template #title>
                             <a :href="item.name">{{ item.author.name }}</a>
@@ -46,6 +47,16 @@
                     <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
                     {{ item.excerpt }}
                     <a :href="`${questionUrl}${questionId}/answer/${item.answer_id}`" target="_blank">跳转</a>
+                    <a-row v-if="item.images.length > 0">
+                        <a-image-preview-group>
+                            <!-- content第一条内容是文字，所以要item.content.slice(1)去除 -->
+                            <a-col :span="8" v-for="(image, imgIndex) in item.images"
+                                :key="image.token" class="image-col">
+                                <a-image :src="image.url" :alt="image.height + 'x' + image.width" class="square-image" />
+                                <!-- {{ 'image-' + item.id + '-' + imgIndex }} -->
+                            </a-col>
+                        </a-image-preview-group>
+                    </a-row>
                 </a-list-item>
             </template>
         </a-list>
@@ -105,6 +116,11 @@ const processAnswerData = (item) => {
     // 添加操作按钮数据和计算得分
     item.actions = createActionItems(item);
     item.num = item.voteup_count * 1.2 + item.thanks_count + item.comment_count * 1.5;
+    item.images = [];
+    if (item.thumbnail_info.count > 0) {
+        item.images.push(...item.thumbnail_info.thumbnails) 
+    }
+    delete item.thumbnail_info;
 
     return item;
 };
@@ -168,9 +184,9 @@ const handleFilterChange = (e) => {
 onMounted(() => {
     // 打印完整 URL 以查看格式
     console.log('Current URL:', window.location.pathname);
-    
+
     questionId.value = route.params.id || window.location.pathname.split('/').pop();
-    
+
 
     // 获取存储的问题数据
     const storedData = localStorage.getItem('questionData');
@@ -203,5 +219,41 @@ onMounted(() => {
 
 :deep(.ant-list .ant-list-item .ant-list-item-meta .ant-list-item-meta-avatar) {
     margin-inline-end: 8px;
+}
+
+.image-col {
+    aspect-ratio: 1 / 1;
+    /* 确保宽高比为1:1 */
+    overflow: hidden;
+    /* 确保内容不溢出 */
+    display: flex;
+    /* 使内部内容居中 */
+    align-items: center;
+    justify-content: center;
+    /* background-color: #FFFFCC; */
+    /* 举例背景色，根据需要调整 */
+    text-align: center;
+    /* 内容居中显示 */
+    border: 0px solid #faad14;
+    /* margin-bottom: 5px; */
+    /* padding: 8px 4px; */
+    position: relative;
+    box-sizing: border-box;
+    /* 确保padding包括在内 */
+    /* 使内部元素可以绝对定位 */
+}
+
+
+.square-image {
+    position: absolute;
+    /* 绝对定位以充满父容器 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    /* 保持图片比例，并裁剪以填充整个容器 */
+    object-position: center;
+    /* 使图片的中心部分显示在容器中间 */
 }
 </style>
