@@ -67,10 +67,11 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const initLoading = ref(false);
 const loading = ref(false);
+import { formatTimeAgo } from '@/utils/timeUtils'
 
 
 
-const title = ref('知乎说')
+const title = ref('熊猫说')
 const inputText = ref('')
 const texts = ref([])
 
@@ -189,6 +190,12 @@ const fetchQuestions = async () => {
                 num = temp / item.reaction.new_answer_num
             }
             item.reaction.num = num
+            const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
+            let timeDiff = (currentTime - item.question.created) * 1000; // 转换为毫秒
+            item.question.topics.push({name:formatTimeAgo(timeDiff)+'创建'});
+            timeDiff = (currentTime - item.question.updated_time) * 1000;
+            item.question.topics.push({name:formatTimeAgo(timeDiff)+'更新'});
+            
             return item
         })
         // Assuming the data structure matches the expected format
