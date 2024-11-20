@@ -19,12 +19,17 @@ html {
 
 /* 设置移动端视图 */
 #app {
-  max-width: 750px;  /* 或者其他合适的宽度 */
   margin: 0 auto;
   min-height: 100vh;
   background: #fff;
   /* 可选：添加手机外观 */
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); */
+}
+
+@media (min-width: 955px) {
+  #app {
+    max-width: 500px;
+  }
 }
 
 /* 适配不同屏幕 */
@@ -37,7 +42,8 @@ html {
 /* 禁用页面滚动，只允许内容区域滚动 */
 body {
   /* overflow: hidden; */
-  background: #f5f5f5;  /* 可选：设置背景色 */
+  /* background: #f5f5f5; */
+  /* 可选：设置背景色 */
 }
 
 /* 内容区域可滚动 */
@@ -45,6 +51,7 @@ body {
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;  /* iOS 滚动优化 */
+  -webkit-overflow-scrolling: touch;
+  /* iOS 滚动优化 */
 }
-</style> 
+</style>
