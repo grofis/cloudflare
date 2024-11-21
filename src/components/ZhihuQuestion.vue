@@ -173,7 +173,9 @@ const formatNumber = (num) => {
 const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
-        const response = await fetch('https://worker.qchunbhuil.workers.dev/zhihu/data', {
+        const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
+        console.log('url:', url)
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -192,10 +194,10 @@ const fetchQuestions = async () => {
             item.reaction.num = num
             const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
             let timeDiff = (currentTime - item.question.created) * 1000; // 转换为毫秒
-            item.question.topics.push({name:formatTimeAgo(timeDiff)+'创建'});
+            item.question.topics.push({ name: formatTimeAgo(timeDiff) + '创建' });
             timeDiff = (currentTime - item.question.updated_time) * 1000;
-            item.question.topics.push({name:formatTimeAgo(timeDiff)+'更新'});
-            
+            item.question.topics.push({ name: formatTimeAgo(timeDiff) + '更新' });
+
             return item
         })
         // Assuming the data structure matches the expected format
@@ -232,7 +234,7 @@ const fetchData = async () => {
 };
 
 onMounted(() => {
-    fetchData(); // Fetch questions when the component is mounted
+    // fetchData(); // Fetch questions when the component is mounted
     fetchQuestions(); // Fetch questions when the component is mounted
 });
 
@@ -264,7 +266,7 @@ const handleItemClick = (item) => {
         params: { id: item.question.id }
     });
     console.log('Generated URL:', route.href);  // 打印实际生成的 URL
-    
+
     window.open(route.href, '_blank');
 };
 </script>

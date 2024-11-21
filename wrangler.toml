@@ -1,0 +1,5 @@
+[vars]
+API_URL = "https://aipincaihuiying.com"
+
+[env.development]
+vars = { API_URL = "http://localhost:8787" }
