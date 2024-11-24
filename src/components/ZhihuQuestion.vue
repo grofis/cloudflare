@@ -134,8 +134,26 @@ const sortQuestions = (type, order) => {
 const addText = () => {
     if (inputText.value.trim()) {
         texts.value.push(inputText.value)
+        const questionId = extractQuestionId(inputText.value);
+
         inputText.value = ''
+        console.log('questionId:', questionId)
+        if (questionId) {
+            const route = router.resolve({
+                name: 'Answers',
+                params: { id: questionId }
+            });
+            console.log('Generated URL:', route.href);  // 打印实际生成的 URL
+
+            window.open(route.href, '_blank');
+        }
+        
     }
+}
+
+function extractQuestionId(url) {
+    const match = url.match(/question\/(\d+)/);
+    return match ? match[1] : null;
 }
 
 const deleteText = (index) => {
