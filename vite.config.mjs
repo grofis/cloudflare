@@ -4,9 +4,12 @@ import Components from 'unplugin-vue-components/vite';
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers';
 import { fileURLToPath, URL } from 'node:url'
 import path from 'path'
+import vueJsx from '@vitejs/plugin-vue-jsx'
+
 export default defineConfig({
   plugins: [
     vue(),
+    vueJsx(),
     Components({
       resolvers: [
         AntDesignVueResolver({
