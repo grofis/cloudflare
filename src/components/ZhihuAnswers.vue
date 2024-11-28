@@ -1,8 +1,9 @@
 <template>
     <div>
-        <a-typography>
-            <a-typography-text strong :style="{ fontSize: '1.2em' }">{{ questionData?.question?.title
-                }}</a-typography-text>
+        <a-typography :style="{ margin:'5px 8px' }">
+            <a-typography-text :style="{ fontSize: '1.2em' }">
+               <a :href="`${questionUrl}${questionId}`" target="_blank"> {{ questionData?.question?.title}}</a>
+            </a-typography-text>
             <a-typography-paragraph>
                 {{ questionData?.reaction?.answer_num }}
                 <a-typography-text type="secondary">个回答·</a-typography-text>
@@ -11,7 +12,7 @@
                 <a-typography-text type="secondary">浏览</a-typography-text>
             </a-typography-paragraph>
         </a-typography>
-        <div style="display: flex; justify-content: flex-end;">
+        <div style="display: flex; justify-content: flex-end; margin-right: 8px;">
             <a-radio-group v-model:value="filters" button-style="solid" size="small" @change="handleFilterChange">
                 <a-radio-button value="fastest">最快</a-radio-button>
                 <a-radio-button value="hotest">最热</a-radio-button>

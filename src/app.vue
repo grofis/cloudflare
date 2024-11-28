@@ -28,7 +28,7 @@ html {
 
 @media (min-width: 955px) {
   #app {
-    max-width: 500px;
+    max-width: 750px;
   }
 }
 
