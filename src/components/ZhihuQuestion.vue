@@ -231,28 +231,7 @@ const fetchQuestions = async () => {
     }
 };
 
-const fetchData = async () => {
-    initLoading.value = true; // Set loading state
-    try {
-        const response = await fetch('https://worker.qchunbhuil.workers.dev/zhihu', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            // 明确指定 CORS 模式
-            mode: 'cors'
-        }); // Replace with your API URL
-        const data = await response.json();
-        console.log('length:', data)
-
-    } catch (error) {
-        console.error('Error fetching questions:', error);
-    } finally {
-    }
-};
-
 onMounted(() => {
-    // fetchData(); // Fetch questions when the component is mounted
     fetchQuestions(); // Fetch questions when the component is mounted
 });
 

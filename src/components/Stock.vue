@@ -23,7 +23,7 @@ const columns = [
         key: 'f12',
         width: 100,
         customRender: ({ text }) => (
-            <a href={`https://stockpage.10jqka.com.cn/${text}/`}
+            <a href={`https://quote.eastmoney.com/${text}.html`}
                 target="_blank"
                 className="stock-link">
                 {text}
@@ -36,7 +36,7 @@ const columns = [
         key: 'f14',
         width: 100,
         customRender: ({ text, record }) => (
-            <a href={`https://stockpage.10jqka.com.cn/${record.f12}/`}
+            <a href={`https://quote.eastmoney.com/${record.f12}.html`}
                 target="_blank"
                 className="stock-link">
                 {text}

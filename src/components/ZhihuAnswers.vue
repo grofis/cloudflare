@@ -1,15 +1,22 @@
 <template>
     <div>
-        <a-typography :style="{ margin:'5px 8px' }">
+        <a-typography :style="{ margin: '5px 8px' }">
             <a-typography-text :style="{ fontSize: '1.2em' }">
-               <a :href="`${questionUrl}${questionId}`" target="_blank"> {{ questionData?.question?.title}}</a>
+                <a :href="`${questionUrl}${questionId}`" target="_blank"> {{ questionData?.title }}</a>
             </a-typography-text>
             <a-typography-paragraph>
-                {{ questionData?.reaction?.answer_num }}
+                {{ questionData?.answer_num }}
                 <a-typography-text type="secondary">个回答·</a-typography-text>
 
-                {{ formatNumber(questionData?.reaction?.pv) }}
+                {{ formatNumber(questionData?.pv) }}
                 <a-typography-text type="secondary">浏览</a-typography-text>
+                {{ questionData?.time_ago_create }}
+                <a-typography-text type="secondary">提问</a-typography-text>
+
+                <template v-if="questionData?.time_ago_create !== questionData?.time_ago_update">
+                    ·{{ questionData?.time_ago_update }}
+                    <a-typography-text type="secondary">更新</a-typography-text>
+                </template>
             </a-typography-paragraph>
         </a-typography>
         <div style="display: flex; justify-content: flex-end; margin-right: 8px;">
@@ -51,9 +58,10 @@
                     <a-row v-if="item.images.length > 0">
                         <a-image-preview-group>
                             <!-- content第一条内容是文字，所以要item.content.slice(1)去除 -->
-                            <a-col :span="8" v-for="(image, imgIndex) in item.images"
-                                :key="image.token" class="image-col">
-                                <a-image :src="image.url" :alt="image.height + 'x' + image.width" class="square-image" />
+                            <a-col :span="8" v-for="(image, imgIndex) in item.images" :key="image.token"
+                                class="image-col">
+                                <a-image :src="image.url" :alt="image.height + 'x' + image.width"
+                                    class="square-image" />
                                 <!-- {{ 'image-' + item.id + '-' + imgIndex }} -->
                             </a-col>
                         </a-image-preview-group>
@@ -70,7 +78,7 @@ import { ref, onMounted, reactive } from 'vue';
 import { useRoute } from 'vue-router';
 import { StarOutlined, LikeOutlined, MessageOutlined } from '@ant-design/icons-vue';
 
-// ================ 状态定义 ================
+//状态定义
 const route = useRoute();
 let questionId = ref('');
 const questionUrl = 'https://www.zhihu.com/question/';
@@ -78,14 +86,14 @@ const questionData = ref(null);
 const listData = reactive([]);
 const filters = ref('1');
 
-// ================ 常量配置 ================
+//常量配置 
 const createActionItems = (item) => [
     { icon: StarOutlined, text: item.thanks_count },
     { icon: LikeOutlined, text: item.voteup_count },
     { icon: MessageOutlined, text: item.comment_count },
 ];
 
-// ================ 工具函数 ================
+//工具函数
 const formatNumber = (num) => {
     if (num >= 10000) {
         return (num / 10000).toFixed(1) + '万';
@@ -95,7 +103,7 @@ const formatNumber = (num) => {
 
 
 
-// ================ 数据处理函数 ================
+//数据处理函数
 const processAnswerData = (item) => {
     // 解析和合并 reaction 数据
     const reaction = JSON.parse(item.reaction);
@@ -107,11 +115,9 @@ const processAnswerData = (item) => {
     let timeDiff = (currentTime - item.created_time) * 1000; // 转换为毫秒
 
     item.response_time = timeDiff;
-    console.log('create timeDiff', timeDiff);
     item.time_ago_create = formatTimeAgo(timeDiff);
 
     timeDiff = (currentTime - item.updated_time) * 1000;
-    console.log('update timeDiff', timeDiff);
     item.time_ago_update = formatTimeAgo(timeDiff);
 
     // 添加操作按钮数据和计算得分
@@ -119,22 +125,22 @@ const processAnswerData = (item) => {
     item.num = item.voteup_count * 1.2 + item.thanks_count + item.comment_count * 1.5;
     item.images = [];
     if (item.thumbnail_info.count > 0) {
-        item.images.push(...item.thumbnail_info.thumbnails) 
+        item.images.push(...item.thumbnail_info.thumbnails)
     }
     delete item.thumbnail_info;
 
     return item;
 };
 
-// ================ API 请求函数 ================
+// API 请求函数
 const fetchAnswersData = async () => {
     try {
-        const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
+        const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
+        // const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
         // const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
         const url = `${baseUrl}answer?id=${questionId.value}`;
-        console.log('url:', url);
+
         const response = await fetch(url);
-        console.log('response:', response);
         const data = await response.json();
 
         // 处理数据
@@ -143,8 +149,6 @@ const fetchAnswersData = async () => {
         // 更新列表数据
         listData.length = 0;
         listData.push(...processedData);
-
-        console.log('listData', listData);
     } catch (error) {
         console.error('Error fetching answers:', error);
     }
@@ -152,15 +156,44 @@ const fetchAnswersData = async () => {
 
 const fetchQuestionDetails = async () => {
     try {
-        const response = await fetch(`http://localhost:8787/question?id=${questionId}`);
-        const data = await response.json();
-        return data;
+        const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
+        const url = `${baseUrl}question?id=${questionId.value}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();  // 正确解析 JSON
+        // console.log('data response:', JSON.stringify(data));
+
+        // 从 initialState.entities.questions 中获取问题数据
+        const questionDetails = data.initialState.entities.questions[questionId.value];
+        console.log('Question details:', questionDetails);
+        if (questionDetails) {
+            let questionObj = {}
+            questionObj.title = questionDetails.title
+            questionObj.answer_num = questionDetails.answerCount
+            questionObj.pv = questionDetails.visitCount
+            questionObj.created = 1732282930
+            questionObj.updatedTime = 1732282930
+
+            const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
+            let timeDiff = (currentTime - questionDetails.created) * 1000; // 转换为毫秒
+            questionObj.time_ago_create = formatTimeAgo(timeDiff);
+
+            timeDiff = (currentTime - questionDetails.updatedTime) * 1000;
+            questionObj.time_ago_update = formatTimeAgo(timeDiff);
+
+            questionData.value = questionObj;
+            console.log('Question details:', questionDetails);
+        }
     } catch (error) {
         console.error('Error fetching question details:', error);
     }
 };
 
-// ================ 排序相关函数 ================
+//排序相关函数
 const sortStrategies = {
     'fastest': (a, b) => (b.num / b.response_time) - (a.num / a.response_time), // 最快
     'hotest': (a, b) => b.num - a.num, // 最热
@@ -176,24 +209,30 @@ const sortData = (type) => {
     }
 };
 
-// ================ 事件处理函数 ================
+//事件处理函数
 const handleFilterChange = (e) => {
     sortData(e.target.value);
 };
 
-// ================ 生命周期钩子 ================
+// 生命周期钩子
 onMounted(() => {
     // 打印完整 URL 以查看格式
-    console.log('Current URL:', window.location.pathname);
-
     questionId.value = route.params.id || window.location.pathname.split('/').pop();
 
-
-    // 获取存储的问题数据
+    // ��取存储的问题数据
     const storedData = localStorage.getItem('questionData');
     if (storedData) {
-        questionData.value = JSON.parse(storedData);
+        let temp = JSON.parse(storedData);
+        let questionObj = {}
+        questionObj.title = temp.question.title
+        questionObj.answer_num = temp.reaction.answer_num
+        questionObj.pv = temp.reaction.pv
+
+        questionData.value = questionObj
         localStorage.removeItem('questionData');
+    } else {
+        // 获取问题数据
+        fetchQuestionDetails();
     }
 
     // 获取答案数据
