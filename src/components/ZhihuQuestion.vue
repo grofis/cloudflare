@@ -11,14 +11,18 @@
                 <button class="delete-btn" @click="deleteText(index)">删除</button>
             </div>
         </div>
-        <div class="radio-group-container"> <!-- 新增的容器 -->
-            <a-space :size="[0, 8]" wrap>
-                <a-checkable-tag v-for="(tag, index) in tagsData" :key="tag.name" v-model:checked="selectTags[index]"
-                    @change="checked => handleChange(tag, checked)"
-                    :style="{ backgroundColor: getTagBackgroundColor(tag) }">
-                    {{ tag.order ? `${tag.name}${tag[tag.order]}` : tag.name }}
-                </a-checkable-tag>
-            </a-space>
+
+        <div class="radio-group-container">
+            <div class="text-wrapper">
+                <a-typography-text type="secondary">{{ saveTime }}获取</a-typography-text>
+            </div>
+            <div class="tags-wrapper">
+                <a-checkable-tag v-for="(tag, index) in tagsData" :key="tag.name"
+                        v-model:checked="selectTags[index]" @change="checked => handleChange(tag, checked)"
+                        :style="{ backgroundColor: getTagBackgroundColor(tag) }">
+                        {{ tag.order ? `${tag.name}${tag[tag.order]}` : tag.name }}
+                    </a-checkable-tag>
+            </div>
         </div>
         <a-list class="demo-loadmore-list" :loading="initLoading" item-layout="horizontal" :data-source="questions">
             <template #loadMore>
@@ -74,6 +78,7 @@ import { formatTimeAgo } from '@/utils/timeUtils'
 const title = ref('熊猫说')
 const inputText = ref('')
 const texts = ref([])
+const saveTime = ref('')
 
 const tagsData = reactive([
     { name: '默认', asc: '', desc: '', type: 'default', order: null },
@@ -147,7 +152,7 @@ const addText = () => {
 
             window.open(route.href, '_blank');
         }
-        
+
     }
 }
 
@@ -191,19 +196,27 @@ const formatNumber = (num) => {
 const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
+        let startTime = performance.now();  // 开始时间
         const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
-        console.log('url:', url)
+        console.log('请求URL:', url)
+        
         const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
             },
-            // 明确指定 CORS 模式
             mode: 'cors'
-        }); // Replace with your API URL
+        });
+        
         const data = await response.json();
-        console.log('length:', data)
-        data.map(item => {
+        let endTime = performance.now();    // 结束时间
+        let duration = endTime - startTime; // 计算耗时
+        startTime = endTime
+        console.log(`网络请求耗时: ${duration.toFixed(2)}ms`);
+        console.log(`数据长度: ${data.data.length}`);
+        
+        saveTime.value = data.saveTime
+        data.data.map(item => {
             let temp = item.reaction.new_pv + item.reaction.new_follow_num * 1.5 + item.reaction.new_upvote_num * 1.2
             let num = 0
             if (item.reaction.new_answer_num > 0) {
@@ -220,10 +233,14 @@ const fetchQuestions = async () => {
         })
         // Assuming the data structure matches the expected format
         questions.value.length = 0;
-        questions.value.push(...data); // Update questions with fetched data
+        questions.value.push(...data.data); // Update questions with fetched data
         srcData.value.length = 0;
-        srcData.value.push(...data);
+        srcData.value.push(...data.data);
         console.log(questions.value)
+
+        endTime = performance.now();
+        duration = endTime - startTime;
+        console.log(`数据处理耗时: ${duration.toFixed(2)}ms`);
     } catch (error) {
         console.error('Error fetching questions:', error);
     } finally {
@@ -277,9 +294,23 @@ const handleItemClick = (item) => {
 
 .radio-group-container {
     display: flex;
-    justify-content: flex-end;
-    /* 使内容居右 */
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0px;
 }
+
+.text-wrapper {
+    flex-shrink: 0;
+}
+
+.tags-wrapper {
+    flex-grow: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+
 
 h1 {
     color: #2c3e50;
@@ -289,7 +320,7 @@ h1 {
 .input-section {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 input {
