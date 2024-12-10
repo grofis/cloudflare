@@ -12,14 +12,14 @@
                 <a-typography-text type="secondary">浏览</a-typography-text>
                 {{ questionData?.time_ago_create }}
                 <a-typography-text type="secondary">提问</a-typography-text>
-
                 <template v-if="questionData?.time_ago_create !== questionData?.time_ago_update">
                     ·{{ questionData?.time_ago_update }}
                     <a-typography-text type="secondary">更新</a-typography-text>
                 </template>
             </a-typography-paragraph>
         </a-typography>
-        <div style="display: flex; justify-content: flex-end; margin-right: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 8px;">
+            <a-typography-text type="secondary">{{ questionData?.saveTime }}</a-typography-text>
             <a-radio-group v-model:value="filters" button-style="solid" size="small" @change="handleFilterChange">
                 <a-radio-button value="fastest">最快</a-radio-button>
                 <a-radio-button value="hotest">最热</a-radio-button>
@@ -46,11 +46,18 @@
                             <a :href="item.name">{{ item.author.name }}</a>
                         </template>
                         <template #description>
-                            <a-typography-text type="secondary">{{ item.author ? item.author.headline + '·' : '' }}{{
-                                item.time_ago_create }}发布{{ item.time_ago_create !== item.time_ago_update ?
-                                    '·' + item.time_ago_update + '更新' : '' }}</a-typography-text>
+                            <div>
+                                {{ item.author ? item.author.headline + '·' : '' }}{{
+                                    item.time_ago_create }}
+                                <a-typography-text type="secondary">发布</a-typography-text>
+                                <template v-if="item?.time_ago_create !== item?.time_ago_update">
+                                    ·{{ item?.time_ago_update }}
+                                    <a-typography-text type="secondary">更新</a-typography-text>
+                                </template>
+                            </div>
                         </template>
                         <template #avatar><a-avatar :src="item.author.avatar_url" /></template>
+
                     </a-list-item-meta>
                     <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
                     {{ item.excerpt }}
@@ -75,6 +82,7 @@
 <script setup>
 import { formatTimeAgo } from '@/utils/timeUtils'
 import { ref, onMounted, reactive } from 'vue';
+import moment from 'moment';
 import { useRoute } from 'vue-router';
 import { StarOutlined, LikeOutlined, MessageOutlined } from '@ant-design/icons-vue';
 
@@ -85,6 +93,7 @@ const questionUrl = 'https://www.zhihu.com/question/';
 const questionData = ref(null);
 const listData = reactive([]);
 const filters = ref('1');
+const saveTime = ref('');
 
 //常量配置 
 const createActionItems = (item) => [
@@ -101,6 +110,109 @@ const formatNumber = (num) => {
     return num;
 };
 
+
+
+
+// API 请求函数
+const fetchAnswersData = async () => {
+    try {
+        const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
+        // const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
+        // const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
+        const url = `${baseUrl}answer?id=${questionId.value}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // 处理数据
+        const processedData = data.map(processAnswerData);
+
+        if (processedData.length > 0) {
+            // 更新列表数据
+            listData.length = 0;
+            listData.push(...processedData);
+        }
+    } catch (error) {
+        console.error('Error fetching answers:', error);
+    }
+};
+
+const fetchQuestionDetails = async () => {
+    try {
+        const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
+        const url = `${baseUrl}question?id=${questionId.value}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();  // 正确解析 JSON
+        console.log('data response:', JSON.stringify(data));
+
+        // 从 initialState.entities.questions 中获取问题数据
+        const questionDetails = data.initialState.entities.questions[questionId.value];
+
+        console.log('Question details:', questionDetails.saveTime);
+        if (questionDetails) {
+            let questionObj = {}
+            questionObj.title = questionDetails.title
+            questionObj.answer_num = questionDetails.answerCount
+            questionObj.pv = questionDetails.visitCount
+            questionObj.created = questionDetails.created
+            questionObj.updatedTime = questionDetails.updatedTime
+
+            const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
+            let timeDiff = (currentTime - questionDetails.created) * 1000; // 转换为毫秒
+            questionObj.time_ago_create = formatTimeAgo(timeDiff);
+
+            timeDiff = (currentTime - questionDetails.updatedTime) * 1000;
+            questionObj.time_ago_update = formatTimeAgo(timeDiff);
+            questionObj.saveTime = moment(data.saveTime).format('YYYY-MM-DD HH:mm:ss') + ' 获取，完整数据正在制作中...预计需要消耗20-30s';
+            
+
+            questionData.value = questionObj;
+
+        }
+
+
+        let answers = data.initialState.entities.answers
+        // Convert answers object to array
+        const answersArray = Object.values(answers);
+
+        // Process the answers array
+        const processedData = answersArray.map(processNewAnswerData);
+
+        // Update list data
+        listData.length = 0;
+        listData.push(...processedData);
+    } catch (error) {
+        console.error('Error fetching question details:', error);
+    }
+};
+
+const processNewAnswerData = (item) => {
+    // Create a reaction object that matches the expected format
+    const reaction = {
+        thanks_count: item.thanksCount,
+        voteup_count: item.voteupCount,
+        comment_count: item.commentCount
+    };
+
+    // Create processed item with all required fields
+    const processedItem = {
+        ...item,
+        reaction: JSON.stringify(reaction), // Match the expected input format for processAnswerData
+        created_time: item.createdTime,
+        updated_time: item.updatedTime,
+        author: { name: item.author.name, headline: item.author.headline, avatar_url: item.author.avatarUrl },
+        answer_id: item.id,
+        thumbnail_info: item.thumbnailInfo || { count: 0, thumbnails: [] }
+    };
+
+    // Use existing processAnswerData to maintain consistency
+    return processAnswerData(processedItem);
+};
 
 
 //数据处理函数
@@ -132,67 +244,6 @@ const processAnswerData = (item) => {
     return item;
 };
 
-// API 请求函数
-const fetchAnswersData = async () => {
-    try {
-        const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
-        // const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
-        // const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
-        const url = `${baseUrl}answer?id=${questionId.value}`;
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        // 处理数据
-        const processedData = data.map(processAnswerData);
-
-        // 更新列表数据
-        listData.length = 0;
-        listData.push(...processedData);
-    } catch (error) {
-        console.error('Error fetching answers:', error);
-    }
-};
-
-const fetchQuestionDetails = async () => {
-    try {
-        const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
-        const url = `${baseUrl}question?id=${questionId.value}`;
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();  // 正确解析 JSON
-        // console.log('data response:', JSON.stringify(data));
-
-        // 从 initialState.entities.questions 中获取问题数据
-        const questionDetails = data.initialState.entities.questions[questionId.value];
-        console.log('Question details:', questionDetails);
-        if (questionDetails) {
-            let questionObj = {}
-            questionObj.title = questionDetails.title
-            questionObj.answer_num = questionDetails.answerCount
-            questionObj.pv = questionDetails.visitCount
-            questionObj.created = 1732282930
-            questionObj.updatedTime = 1732282930
-
-            const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
-            let timeDiff = (currentTime - questionDetails.created) * 1000; // 转换为毫秒
-            questionObj.time_ago_create = formatTimeAgo(timeDiff);
-
-            timeDiff = (currentTime - questionDetails.updatedTime) * 1000;
-            questionObj.time_ago_update = formatTimeAgo(timeDiff);
-
-            questionData.value = questionObj;
-            console.log('Question details:', questionDetails);
-        }
-    } catch (error) {
-        console.error('Error fetching question details:', error);
-    }
-};
-
 //排序相关函数
 const sortStrategies = {
     'fastest': (a, b) => (b.num / b.response_time) - (a.num / a.response_time), // 最快
@@ -219,25 +270,36 @@ onMounted(() => {
     // 打印完整 URL 以查看格式
     questionId.value = route.params.id || window.location.pathname.split('/').pop();
 
-    // ��取存储的问题数据
+    // 获取存储的问题数据
     const storedData = localStorage.getItem('questionData');
+    console.log('storedData:', storedData)
     if (storedData) {
         let temp = JSON.parse(storedData);
+        console.log('temp:', temp)
         let questionObj = {}
         questionObj.title = temp.question.title
         questionObj.answer_num = temp.reaction.answer_num
         questionObj.pv = temp.reaction.pv
 
+        questionObj.created = temp.question.created
+        questionObj.updatedTime = temp.question.updated_time
+
+        const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
+        let timeDiff = (currentTime - questionObj.created) * 1000; // 转换为毫秒
+        questionObj.time_ago_create = formatTimeAgo(timeDiff);
+
+        timeDiff = (currentTime - questionObj.updatedTime) * 1000;
+        questionObj.time_ago_update = formatTimeAgo(timeDiff);
+
+
         questionData.value = questionObj
         localStorage.removeItem('questionData');
-    } else {
-        // 获取问题数据
-        fetchQuestionDetails();
     }
+    fetchQuestionDetails();
 
     // 获取答案数据
-    fetchAnswersData();
-    console.log('data is', questionId, questionData.value);
+    //fetchAnswersData();
+    //console.log('data is', questionId, questionData.value);
 });
 </script>
 

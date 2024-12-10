@@ -274,6 +274,7 @@ const getTagBackgroundColor = (tag) => {
 const handleItemClick = (item) => {
     // 先将数据存储到 localStorage
     localStorage.setItem('questionData', JSON.stringify(item));
+    console.log('item:', item)
 
     const route = router.resolve({
         name: 'Answers',
