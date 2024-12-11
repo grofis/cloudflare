@@ -18,6 +18,7 @@ export default defineConfig({
       ],
     }),
   ],
+  base: '/',
   publicDir: 'public',    // 指定静态资源目录
   resolve: {
     alias: {
