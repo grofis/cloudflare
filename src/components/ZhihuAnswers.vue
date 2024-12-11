@@ -298,7 +298,7 @@ onMounted(() => {
     fetchQuestionDetails();
 
     // 获取答案数据
-    //fetchAnswersData();
+    fetchAnswersData();
     //console.log('data is', questionId, questionData.value);
 });
 </script>
