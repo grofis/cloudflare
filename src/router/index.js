@@ -6,6 +6,7 @@ import People from '../components/People.vue'
 import Cctv from '../components/Cctv.vue'
 import Btc from '../components/Btc.vue'
 import Stock from '../components/Stock.vue'
+import Twitter from '../components/Twitter.vue'
 const routes = [
   
   {
@@ -38,6 +39,11 @@ const routes = [
     path: '/stock',
     name: 'Stock',
     component: Stock
+  },
+  {
+    path: '/x',
+    name: 'Twitter',
+    component: Twitter
   }
 ]
 
