@@ -26,7 +26,13 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: './index.html',
+        favicon: './public/favicon.ico', // 强制包含 favicon.ico
+      }
+    }
   },
   server: {
     headers: {
