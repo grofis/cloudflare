@@ -30,7 +30,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './index.html',
-        favicon: './public/favicon.ico', // 强制包含 favicon.ico
       }
     }
   },
