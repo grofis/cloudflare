@@ -19,7 +19,7 @@
             </a-typography-paragraph>
         </a-typography>
         <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 8px;">
-            <a-typography-text type="secondary">{{ questionData?.saveTime }}</a-typography-text>
+            <a-typography-text type="secondary">{{ saveTime }}</a-typography-text>
             <a-radio-group v-model:value="filters" button-style="solid" size="small" @change="handleFilterChange">
                 <a-radio-button value="fastest">最快</a-radio-button>
                 <a-radio-button value="hotest">最热</a-radio-button>
@@ -116,6 +116,9 @@ const formatNumber = (num) => {
 // API 请求函数
 const fetchAnswersData = async () => {
     try {
+        let time = saveTime.value
+        saveTime.value = time + ' 开始获取答案数据...';
+        let startTime = performance.now();  // 开始时间
         const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
         // const baseUrl = 'https://worker.qchunbhuil.workers.dev/zhihu/' //localhost:8787
         // const baseUrl = 'http://localhost:8787/zhihu/' //localhost:8787
@@ -132,6 +135,10 @@ const fetchAnswersData = async () => {
             listData.length = 0;
             listData.push(...processedData);
         }
+        let endTime = performance.now();  // 结束时间
+        let diffTime = ((endTime - startTime) / 1000).toFixed(2);
+        saveTime.value = time + `答案用时 ${diffTime}s, 答案 ${processedData.length}条`;
+        console.log('fetchAnswersData time:', endTime - startTime);
     } catch (error) {
         console.error('Error fetching answers:', error);
     }
@@ -142,18 +149,18 @@ const fetchQuestionDetails = async () => {
         const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
         const url = `${baseUrl}question?id=${questionId.value}`;
         const response = await fetch(url);
+        console.log('url:', url)
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();  // 正确解析 JSON
-        console.log('data response:', JSON.stringify(data));
+        // console.log('data response:', JSON.stringify(data));
 
         // 从 initialState.entities.questions 中获取问题数据
         const questionDetails = data.initialState.entities.questions[questionId.value];
 
-        console.log('Question details:', questionDetails.saveTime);
         if (questionDetails) {
             let questionObj = {}
             questionObj.title = questionDetails.title
@@ -168,11 +175,9 @@ const fetchQuestionDetails = async () => {
 
             timeDiff = (currentTime - questionDetails.updatedTime) * 1000;
             questionObj.time_ago_update = formatTimeAgo(timeDiff);
-            questionObj.saveTime = moment(data.saveTime).format('YYYY-MM-DD HH:mm:ss') + ' 获取，完整数据正在制作中...预计需要消耗20-30s';
-            
 
             questionData.value = questionObj;
-
+            saveTime.value = moment(data.saveTime).format('YYYY-MM-DD HH:mm:ss') + ' 获取问题信息，';
         }
 
 
@@ -295,11 +300,11 @@ onMounted(() => {
         questionData.value = questionObj
         localStorage.removeItem('questionData');
     }
-    fetchQuestionDetails();
+    fetchQuestionDetails().then(() => {
+        // 获取答案数据
+        fetchAnswersData();
+    })
 
-    // 获取答案数据
-    fetchAnswersData();
-    //console.log('data is', questionId, questionData.value);
 });
 </script>
 

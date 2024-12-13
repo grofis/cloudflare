@@ -11,17 +11,55 @@
                 <button class="delete-btn" @click="deleteText(index)">删除</button>
             </div>
         </div>
+        <a-row justify="start">
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/cctv'" target="_blank">
+                    <GlobalOutlined :style="{ color: '#FF0000' }" />
+                    <div>CCTV</div>
+                </router-link>
+            </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/btc'" target="_blank">
+                    <DollarCircleOutlined :style="{ color: '#F7931A' }" />
+                    <div>BTC</div>
+                </router-link>
+            </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/x'" target="_blank">
+                    <TwitterOutlined :style="{ color: '#1DA1F2' }" />
+                    <div>Twitter</div>
+                </router-link>
+            </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/'" target="_blank">
+                    <BulbOutlined :style="{ color: '#FFA000' }" />
+                    <div>想法</div>
+                </router-link>
+            </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/people'" target="_blank">
+                    <UserOutlined :style="{ color: '#9C27B0' }" />
+                    <div>人物</div>
+                </router-link>
+            </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/stock'" target="_blank">
+                    <StockOutlined :style="{ color: '#4CAF50' }" />
+                    <div>股市</div>
+                </router-link>
+            </a-col>
+        </a-row>
 
         <div class="radio-group-container">
             <div class="text-wrapper">
-                <a-typography-text type="secondary">{{ saveTime }}获取</a-typography-text>
+                <a-typography-text type="secondary">{{ saveTime }}</a-typography-text>
             </div>
             <div class="tags-wrapper">
-                <a-checkable-tag v-for="(tag, index) in tagsData" :key="tag.name"
-                        v-model:checked="selectTags[index]" @change="checked => handleChange(tag, checked)"
-                        :style="{ backgroundColor: getTagBackgroundColor(tag) }">
-                        {{ tag.order ? `${tag.name}${tag[tag.order]}` : tag.name }}
-                    </a-checkable-tag>
+                <a-checkable-tag v-for="(tag, index) in tagsData" :key="tag.name" v-model:checked="selectTags[index]"
+                    @change="checked => handleChange(tag, checked)"
+                    :style="{ backgroundColor: getTagBackgroundColor(tag) }">
+                    {{ tag.order ? `${tag.name}${tag[tag.order]}` : tag.name }}
+                </a-checkable-tag>
             </div>
         </div>
         <a-list class="demo-loadmore-list" :loading="initLoading" item-layout="horizontal" :data-source="questions">
@@ -72,6 +110,15 @@ const router = useRouter();
 const initLoading = ref(false);
 const loading = ref(false);
 import { formatTimeAgo } from '@/utils/timeUtils'
+import {
+    GlobalOutlined,
+    DollarCircleOutlined,
+    TwitterOutlined,
+    BulbOutlined,
+    UserOutlined,
+    StockOutlined
+} from '@ant-design/icons-vue';
+
 
 
 
@@ -194,12 +241,13 @@ const formatNumber = (num) => {
 };
 
 const fetchQuestions = async () => {
+    const loadingStartTime = performance.now();  // Record the start time of loading
     initLoading.value = true; // Set loading state
     try {
         let startTime = performance.now();  // 开始时间
         const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
         console.log('请求URL:', url)
-        
+
         const response = await fetch(url, {
             method: 'GET',
             headers: {
@@ -207,15 +255,15 @@ const fetchQuestions = async () => {
             },
             mode: 'cors'
         });
-        
+
         const data = await response.json();
         let endTime = performance.now();    // 结束时间
         let duration = endTime - startTime; // 计算耗时
         startTime = endTime
         console.log(`网络请求耗时: ${duration.toFixed(2)}ms`);
         console.log(`数据长度: ${data.data.length}`);
-        
-        saveTime.value = data.saveTime
+
+        saveTime.value = data.saveTime + `获取`
         data.data.map(item => {
             let temp = item.reaction.new_pv + item.reaction.new_follow_num * 1.5 + item.reaction.new_upvote_num * 1.2
             let num = 0
@@ -245,6 +293,10 @@ const fetchQuestions = async () => {
         console.error('Error fetching questions:', error);
     } finally {
         initLoading.value = false; // Reset loading state
+        const loadingEndTime = performance.now();
+        const totalLoadingTime = loadingEndTime - loadingStartTime;
+        console.log(`总加载时间: ${totalLoadingTime.toFixed(2)}ms`);
+        saveTime.value = saveTime.value + ` 用时: ${(totalLoadingTime / 1000).toFixed(2)}s`
     }
 };
 
@@ -311,7 +363,12 @@ const handleItemClick = (item) => {
     align-items: center;
 }
 
-
+.icon-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
 
 h1 {
     color: #2c3e50;
@@ -391,5 +448,18 @@ button:hover {
 .radio-group-container {
     display: flex;
     justify-content: flex-end;
+}
+
+.icon-container a {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
+.icon-container a:hover {
+    opacity: 0.8;
 }
 </style>
