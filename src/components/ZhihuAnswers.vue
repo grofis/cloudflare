@@ -44,6 +44,7 @@
                     <a-list-item-meta>
                         <template #title>
                             <a :href="item.name">{{ item.author.name }}</a>
+                            <a-tag color="#2db7f5" v-if="item?.isFiltered">筛选结果</a-tag>
                         </template>
                         <template #description>
                             <div>
@@ -56,7 +57,7 @@
                                 </template>
                             </div>
                         </template>
-                        <template #avatar><a-avatar :src="item.author.avatar_url" /></template>
+                        <template #avatar><a-avatar :src="item.author.avatar_url.split('?')[0]" /></template>
 
                     </a-list-item-meta>
                     <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
@@ -91,7 +92,7 @@ const route = useRoute();
 let questionId = ref('');
 const questionUrl = 'https://www.zhihu.com/question/';
 const questionData = ref(null);
-const listData = reactive([]);
+let listData = reactive([]);
 const filters = ref('1');
 const saveTime = ref('');
 
@@ -110,9 +111,6 @@ const formatNumber = (num) => {
     return num;
 };
 
-
-
-
 // API 请求函数
 const fetchAnswersData = async () => {
     try {
@@ -129,11 +127,23 @@ const fetchAnswersData = async () => {
 
         // 处理数据
         const processedData = data.map(processAnswerData);
+        processedData.forEach(element => {
+            element.isFiltered = true
+        });
 
         if (processedData.length > 0) {
-            // 更新列表数据
-            listData.length = 0;
-            listData.push(...processedData);
+            // 创建新数据的 ID 集合
+            const newDataIds = new Set(processedData.map(item => item.id));
+            console.log('筛选前:', listData.length, listData);
+
+            // 删除已存在的数据
+            let temp = listData.filter(item => !newDataIds.has(item.id));
+
+            // 合并数组：新数据在前，旧数据在后
+            listData.length = 0;  // 清空原数组
+            listData.push(...processedData, ...temp);  // 重新填充数据
+
+            console.log('更新后:', listData.length, listData);
         }
         let endTime = performance.now();  // 结束时间
         let diffTime = ((endTime - startTime) / 1000).toFixed(2);
@@ -187,6 +197,8 @@ const fetchQuestionDetails = async () => {
 
         // Process the answers array
         const processedData = answersArray.map(processNewAnswerData);
+
+        console.log('默认问题保存的结果:', processedData)
 
         // Update list data
         listData.length = 0;
@@ -273,33 +285,9 @@ const handleFilterChange = (e) => {
 // 生命周期钩子
 onMounted(() => {
     // 打印完整 URL 以查看格式
-    questionId.value = route.params.id || window.location.pathname.split('/').pop();
-
-    // 获取存储的问题数据
-    const storedData = localStorage.getItem('questionData');
-    console.log('storedData:', storedData)
-    if (storedData) {
-        let temp = JSON.parse(storedData);
-        console.log('temp:', temp)
-        let questionObj = {}
-        questionObj.title = temp.question.title
-        questionObj.answer_num = temp.reaction.answer_num
-        questionObj.pv = temp.reaction.pv
-
-        questionObj.created = temp.question.created
-        questionObj.updatedTime = temp.question.updated_time
-
-        const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
-        let timeDiff = (currentTime - questionObj.created) * 1000; // 转换为毫秒
-        questionObj.time_ago_create = formatTimeAgo(timeDiff);
-
-        timeDiff = (currentTime - questionObj.updatedTime) * 1000;
-        questionObj.time_ago_update = formatTimeAgo(timeDiff);
+    questionId.value = window.location.pathname.split('/').pop();
 
 
-        questionData.value = questionObj
-        localStorage.removeItem('questionData');
-    }
     fetchQuestionDetails().then(() => {
         // 获取答案数据
         fetchAnswersData();

@@ -71,30 +71,44 @@
             </template>
             <template #renderItem="{ item }">
                 <a-list-item @click="handleItemClick(item)">
+                    <template #extra>
+                        <a-avatar-group>
+                            <template v-for="topic in item.topics">
+                                <a-tooltip v-if="topic && topic.avatarUrl" placement="top" :title="topic.name">
+                                    <a-avatar :src="topic.avatarUrl" style="background-color: #87d068">
+                                    </a-avatar>
+                                </a-tooltip>
+                            </template>
+                        </a-avatar-group>
+                    </template>
                     <a-skeleton avatar :title="false" :loading="!!item.loading" active>
+
                         <a-list-item-meta>
                             <template #description>
                                 <div>
-                                    {{ `${item.reaction.new_answer_num}/${item.reaction.answer_num}回答· ` }}
-                                    {{ `${item.reaction.new_upvote_num}/${item.reaction.upvote_num}赞同·` }}
-                                    {{ `${item.reaction.new_follow_num}/${item.reaction.follow_num}关注·` }}
-                                    {{ `${formatNumber(item.reaction.new_pv)}/${formatNumber(item.reaction.pv)}浏览` }}
+                                    {{ `${item.new_answer_num}/${item.answer_num}回答· ` }}
+                                    {{ `${item.new_upvote_num}/${item.upvote_num}赞同·` }}
+                                    {{ `${item.new_follow_num}/${item.follow_num}关注·` }}
+                                    {{ `${formatNumber(item.new_pv)}/${formatNumber(item.pv)}浏览` }}
                                 </div>
                             </template>
                             <template #title>
-                                <a :href="item.question.url" target="_blank">{{ item.question.title }}</a>
-                                <a-tag v-for="tag in item.question.topics" :key="tag" color="default">
-                                    {{ tag.name }}
-                                </a-tag>
+                                <a :href="item.url" target="_blank">{{ item.title }}</a>
+                                <template v-for="tag in item.topics">
+                                    <a-tag v-if="tag && !tag.avatarUrl" :key="tag" color="default">
+                                        {{ tag.name }}
+                                    </a-tag>
+                                </template>
                             </template>
                             <template #avatar>
                                 <a-avatar size="large"
-                                    :style="{ backgroundColor: getColorByNum(item.reaction.answer_num), verticalAlign: 'middle' }"
-                                    :gap="4">
-                                    {{ item.reaction.answer_num }}
+                                    :style="{ backgroundColor: getColorByNum(item.answer_num), verticalAlign: 'middle' }"
+                                    :src="item.author.avatarUrl" :gap="4">
                                 </a-avatar>
                             </template>
                         </a-list-item-meta>
+
+
                     </a-skeleton>
                 </a-list-item>
             </template>
@@ -245,7 +259,7 @@ const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
         let startTime = performance.now();  // 开始时间
-        const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
+        const url = `${import.meta.env.VITE_API_URL}/zhihu/current`
         console.log('请求URL:', url)
 
         const response = await fetch(url, {
@@ -261,29 +275,29 @@ const fetchQuestions = async () => {
         let duration = endTime - startTime; // 计算耗时
         startTime = endTime
         console.log(`网络请求耗时: ${duration.toFixed(2)}ms`);
-        console.log(`数据长度: ${data.data.length}`);
+        console.log(`数据长度: ${data.length}`);
 
         saveTime.value = data.saveTime + `获取`
-        data.data.map(item => {
-            let temp = item.reaction.new_pv + item.reaction.new_follow_num * 1.5 + item.reaction.new_upvote_num * 1.2
+        data.map(item => {
+            let temp = item.new_pv + item.new_follow_num * 1.5 + item.new_upvote_num * 1.2
             let num = 0
-            if (item.reaction.new_answer_num > 0) {
-                num = temp / item.reaction.new_answer_num
+            if (item.new_answer_num > 0) {
+                num = temp / item.new_answer_num
             }
-            item.reaction.num = num
+            item.num = num
             const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
-            let timeDiff = (currentTime - item.question.created) * 1000; // 转换为毫秒
-            item.question.topics.push({ name: formatTimeAgo(timeDiff) + '创建' });
-            timeDiff = (currentTime - item.question.updated_time) * 1000;
-            item.question.topics.push({ name: formatTimeAgo(timeDiff) + '更新' });
+            let timeDiff = (currentTime - item.created) * 1000; // 转换为毫秒
+            item.topics.push({ name: formatTimeAgo(timeDiff) + '创建' });
+            timeDiff = (currentTime - item.updated_time) * 1000;
+            item.topics.push({ name: formatTimeAgo(timeDiff) + '更新' });
 
             return item
         })
         // Assuming the data structure matches the expected format
         questions.value.length = 0;
-        questions.value.push(...data.data); // Update questions with fetched data
+        questions.value.push(...data); // Update questions with fetched data
         srcData.value.length = 0;
-        srcData.value.push(...data.data);
+        srcData.value.push(...data);
         console.log(questions.value)
 
         endTime = performance.now();
@@ -325,12 +339,12 @@ const getTagBackgroundColor = (tag) => {
 
 const handleItemClick = (item) => {
     // 先将数据存储到 localStorage
-    localStorage.setItem('questionData', JSON.stringify(item));
-    console.log('item:', item)
+    // localStorage.setItem('questionData', JSON.stringify(item));
+    // console.log('item:', item)
 
     const route = router.resolve({
         name: 'Answers',
-        params: { id: item.question.id }
+        params: { id: item.id }
     });
     console.log('Generated URL:', route.href);  // 打印实际生成的 URL
 
