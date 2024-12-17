@@ -277,7 +277,7 @@ const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
         let startTime = performance.now();  // 开始时间
-        const url = `${import.meta.env.VITE_API_URL}/zhihu/current`
+        const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
         console.log('请求URL:', url)
 
         const response = await fetch(url, {
