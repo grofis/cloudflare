@@ -259,7 +259,7 @@ const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
         let startTime = performance.now();  // 开始时间
-        const url = `${import.meta.env.VITE_API_URL}/zhihu/current`
+        const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
         console.log('请求URL:', url)
 
         const response = await fetch(url, {
@@ -270,7 +270,8 @@ const fetchQuestions = async () => {
             mode: 'cors'
         });
 
-        const data = await response.json();
+        let data = await response.json();
+        // data = data.data
         let endTime = performance.now();    // 结束时间
         let duration = endTime - startTime; // 计算耗时
         startTime = endTime
