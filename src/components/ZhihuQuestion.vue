@@ -70,19 +70,21 @@
                 </div>
             </template>
             <template #renderItem="{ item }">
-                <a-list-item @click="handleItemClick(item)">
+                <a-list-item>
                     <template #extra>
                         <a-avatar-group>
                             <template v-for="topic in item.topics">
                                 <a-tooltip v-if="topic && topic.avatarUrl" placement="top" :title="topic.name">
-                                    <a-avatar :src="topic.avatarUrl" style="background-color: #87d068">
-                                    </a-avatar>
+                                    <a :href="`https://www.zhihu.com/topic/${topic.id}/hot`" target="_blank"
+                                        class="author-link">
+                                        <a-avatar :src="topic.avatarUrl" style="background-color: #87d068">
+                                        </a-avatar>
+                                    </a>
                                 </a-tooltip>
                             </template>
                         </a-avatar-group>
                     </template>
                     <a-skeleton avatar :title="false" :loading="!!item.loading" active>
-
                         <a-list-item-meta>
                             <template #description>
                                 <div>
@@ -101,14 +103,21 @@
                                 </template>
                             </template>
                             <template #avatar>
-                                <a-avatar size="large"
-                                    :style="{ backgroundColor: getColorByNum(item.answer_num), verticalAlign: 'middle' }"
-                                    :src="item.author.avatarUrl" :gap="4">
-                                </a-avatar>
+                                <a :href="`https://www.zhihu.com/people/${item.author.urlToken}`" target="_blank"
+                                    class="author-link">
+                                    <a-tooltip placement="top" :title="item.author.name">
+                                        <div class="avatar-container">
+                                            <a-avatar size="large" :src="item.author.avatarUrl"
+                                                style="background-color: #87d068">
+                                            </a-avatar>
+                                            <a-typography-text type="secondary" class="author-name">
+                                                {{ truncateName(item.author.name) }}
+                                            </a-typography-text>
+                                        </div>
+                                    </a-tooltip>
+                                </a>
                             </template>
                         </a-list-item-meta>
-
-
                     </a-skeleton>
                 </a-list-item>
             </template>
@@ -180,6 +189,15 @@ const handleChange = (tag, checked) => {
     }
     console.log(tag, checked);
 };
+
+const truncateName = (name) => {
+    return name.slice(0, 3);
+}
+
+const handleAuthorClick = (e) => {
+    // 允许链接正常打开，但阻止事件冒泡
+    e.stopPropagation();
+}
 
 const sortQuestions = (type, order) => {
     if (order === null) {
@@ -259,7 +277,7 @@ const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
         let startTime = performance.now();  // 开始时间
-        const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
+        const url = `${import.meta.env.VITE_API_URL}/zhihu/current`
         console.log('请求URL:', url)
 
         const response = await fetch(url, {
@@ -271,6 +289,7 @@ const fetchQuestions = async () => {
         });
 
         let data = await response.json();
+        console.log('data:', data)
         // data = data.data
         let endTime = performance.now();    // 结束时间
         let duration = endTime - startTime; // 计算耗时
@@ -376,6 +395,26 @@ const handleItemClick = (item) => {
     display: flex;
     justify-content: flex-end;
     align-items: center;
+}
+
+.avatar-container {
+    display: flex;
+    flex-direction: column;
+    /* 改为垂直方向排列 */
+    align-items: center;
+    /* 水平居中 */
+    gap: 4px;
+    /* 元素之间的间距 */
+}
+
+/* .author-link {
+    display: block;
+    text-decoration: none;
+    cursor: pointer;
+} */
+
+.author-name {
+    font-size: 12px;
 }
 
 .icon-container {
