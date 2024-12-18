@@ -1,9 +1,14 @@
 <template>
-    <div>
-        <a-typography :style="{ margin: '5px 8px' }">
+    <div style="background-color: aliceblue;">
+        <a-typography :style="{ margin: '5px 0px', backgroundColor: 'white' }">
             <a-typography-text :style="{ fontSize: '1.2em' }">
                 <a :href="`${questionUrl}${questionId}`" target="_blank"> {{ questionData?.title }}</a>
             </a-typography-text>
+            <a-typography-paragraph v-html="questionData?.detail">
+            </a-typography-paragraph>
+            <a-typography-paragraph>
+                判断结果:{{ questionData?.judgment.score }}分，{{ questionData?.judgment.reason }}
+            </a-typography-paragraph>
             <a-typography-paragraph>
                 {{ questionData?.answer_num }}
                 <a-typography-text type="secondary">个回答·</a-typography-text>
@@ -18,65 +23,68 @@
                 </template>
             </a-typography-paragraph>
         </a-typography>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 8px;">
-            <a-typography-text type="secondary">{{ saveTime }}</a-typography-text>
-            <a-radio-group v-model:value="filters" button-style="solid" size="small" @change="handleFilterChange">
-                <a-radio-button value="fastest">最快</a-radio-button>
-                <a-radio-button value="hotest">最热</a-radio-button>
-                <a-radio-button value="newest">最新</a-radio-button>
-            </a-radio-group>
-        </div>
-        <a-list item-layout="vertical" size="large" :data-source="listData">
+        <div style="margin: 0 0px; background-color: white;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 8px;">
+                <a-typography-text type="secondary">{{ saveTime }}</a-typography-text>
+                <a-radio-group v-model:value="filters" button-style="solid" size="small" @change="handleFilterChange">
+                    <a-radio-button value="fastest">最快</a-radio-button>
+                    <a-radio-button value="hotest">最热</a-radio-button>
+                    <a-radio-button value="newest">最新</a-radio-button>
+                </a-radio-group>
+            </div>
+            <a-list item-layout="vertical" size="large" :data-source="listData">
 
-            <template #renderItem="{ item }">
-                <a-list-item key="item.title">
+                <template #renderItem="{ item }">
+                    <a-list-item key="item.title">
 
-                    <template #actions>
-                        <span v-for="{ icon, text } in item.actions" :key="icon">
-                            <component :is="icon" style="margin-right: 8px" />
-                            {{ text }}
-                        </span>
-                    </template>
+                        <template #actions>
+                            <span v-for="{ icon, text } in item.actions" :key="icon">
+                                <component :is="icon" style="margin-right: 8px" />
+                                {{ text }}
+                            </span>
+                        </template>
 
-                    <!-- <template #extra v-if="item.thumbnail_info.count > 0">
+                        <!-- <template #extra v-if="item.thumbnail_info.count > 0">
                         <img width="272" alt="logo" :src="item.thumbnail_info?.thumbnails[0]?.url" />
                     </template> -->
-                    <a-list-item-meta>
-                        <template #title>
-                            <a :href="item.name">{{ item.author.name }}</a>
-                            <a-tag color="#2db7f5" v-if="item?.isFiltered">筛选结果</a-tag>
-                        </template>
-                        <template #description>
-                            <div>
-                                {{ item.author ? item.author.headline + '·' : '' }}{{
-                                    item.time_ago_create }}
-                                <a-typography-text type="secondary">发布</a-typography-text>
-                                <template v-if="item?.time_ago_create !== item?.time_ago_update">
-                                    ·{{ item?.time_ago_update }}
-                                    <a-typography-text type="secondary">更新</a-typography-text>
-                                </template>
-                            </div>
-                        </template>
-                        <template #avatar><a-avatar :src="item.author.avatar_url.split('?')[0]" /></template>
+                        <a-list-item-meta>
+                            <template #title>
+                                <a :href="item.name">{{ item.author.name }}</a>
+                                <a-tag color="#2db7f5" v-if="item?.isFiltered">筛选结果</a-tag>
+                            </template>
+                            <template #description>
+                                <div>
+                                    {{ item.author ? item.author.headline + '·' : '' }}{{
+                                        item.time_ago_create }}
+                                    <a-typography-text type="secondary">发布</a-typography-text>
+                                    <template v-if="item?.time_ago_create !== item?.time_ago_update">
+                                        ·{{ item?.time_ago_update }}
+                                        <a-typography-text type="secondary">更新</a-typography-text>
+                                    </template>
+                                </div>
+                            </template>
+                            <template #avatar><a-avatar :src="item.author.avatar_url.split('?')[0]" /></template>
 
-                    </a-list-item-meta>
-                    <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
-                    {{ item.excerpt }}
-                    <a :href="`${questionUrl}${questionId}/answer/${item.answer_id}`" target="_blank">跳转</a>
-                    <a-row v-if="item.images.length > 0">
-                        <a-image-preview-group>
-                            <!-- content第一条内容是文字，所以要item.content.slice(1)去除 -->
-                            <a-col :span="8" v-for="(image, imgIndex) in item.images" :key="image.token"
-                                class="image-col">
-                                <a-image :src="image.url" :alt="image.height + 'x' + image.width"
-                                    class="square-image" />
-                                <!-- {{ 'image-' + item.id + '-' + imgIndex }} -->
-                            </a-col>
-                        </a-image-preview-group>
-                    </a-row>
-                </a-list-item>
-            </template>
-        </a-list>
+                        </a-list-item-meta>
+                        <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
+                        {{ item.excerpt }}
+                        <a :href="`${questionUrl}${questionId}/answer/${item.answer_id}`" target="_blank">跳转</a>
+                        <a-row v-if="item.images.length > 0">
+                            <a-image-preview-group>
+                                <!-- content第一条内容是文字，所以要item.content.slice(1)去除 -->
+                                <a-col :span="8" v-for="(image, imgIndex) in item.images" :key="image.token"
+                                    class="image-col">
+                                    <a-image :src="image.url" :alt="image.height + 'x' + image.width"
+                                        class="square-image" />
+                                    <!-- {{ 'image-' + item.id + '-' + imgIndex }} -->
+                                </a-col>
+                            </a-image-preview-group>
+                        </a-row>
+                    </a-list-item>
+                </template>
+            </a-list>
+        </div>
+
     </div>
 </template>
 
@@ -178,7 +186,8 @@ const fetchQuestionDetails = async () => {
             questionObj.pv = questionDetails.visitCount
             questionObj.created = questionDetails.created
             questionObj.updatedTime = questionDetails.updatedTime
-
+            questionObj.detail = questionDetails.detail
+            questionObj.judgment = data.judgment
             const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
             let timeDiff = (currentTime - questionDetails.created) * 1000; // 转换为毫秒
             questionObj.time_ago_create = formatTimeAgo(timeDiff);

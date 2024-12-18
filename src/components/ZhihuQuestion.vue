@@ -70,7 +70,7 @@
                 </div>
             </template>
             <template #renderItem="{ item }">
-                <a-list-item>
+                <a-list-item @click="handleItemClick(item)">
                     <template #extra>
                         <a-avatar-group>
                             <template v-for="topic in item.topics">
@@ -87,12 +87,14 @@
                     <a-skeleton avatar :title="false" :loading="!!item.loading" active>
                         <a-list-item-meta>
                             <template #description>
-                                <div>
-                                    {{ `${item.new_answer_num}/${item.answer_num}回答· ` }}
-                                    {{ `${item.new_upvote_num}/${item.upvote_num}赞同·` }}
-                                    {{ `${item.new_follow_num}/${item.follow_num}关注·` }}
-                                    {{ `${formatNumber(item.new_pv)}/${formatNumber(item.pv)}浏览` }}
-                                </div>
+                                
+                                    <div>
+                                        {{ `${item.new_answer_num}/${item.answer_num}回答· ` }}
+                                        {{ `${item.new_upvote_num}/${item.upvote_num}赞同·` }}
+                                        {{ `${item.new_follow_num}/${item.follow_num}关注·` }}
+                                        {{ `${formatNumber(item.new_pv)}/${formatNumber(item.pv)}浏览` }}
+                                    </div>
+                                
                             </template>
                             <template #title>
                                 <a :href="item.url" target="_blank">{{ item.title }}</a>
@@ -198,6 +200,9 @@ const truncateName = (name) => {
     if (!name) {
         return '';
     }
+    if (name.length === 4) {
+        return name.slice(0, 2)
+    }
     return name.slice(0, 3);
 }
 
@@ -285,8 +290,8 @@ const fetchQuestions = async () => {
     try {
         let startTime = performance.now();  // 开始时间
         // let url = `https://sunziagent.com/zhihu/data`
-        const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
-        // let url = `${import.meta.env.VITE_API_URL}/zhihu/current`
+        // const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
+        let url = `${import.meta.env.VITE_API_URL}/zhihu/current`
         console.log('请求URL:', url)
 
         const response = await fetch(url, {
