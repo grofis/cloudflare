@@ -277,7 +277,9 @@ const fetchQuestions = async () => {
     initLoading.value = true; // Set loading state
     try {
         let startTime = performance.now();  // 开始时间
+        // let url = `https://sunziagent.com/zhihu/data`
         const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
+        // let url = `${import.meta.env.VITE_API_URL}/zhihu/current`
         console.log('请求URL:', url)
 
         const response = await fetch(url, {
@@ -307,6 +309,7 @@ const fetchQuestions = async () => {
             item.num = num
             const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
             let timeDiff = (currentTime - item.created) * 1000; // 转换为毫秒
+            
             item.topics.push({ name: formatTimeAgo(timeDiff) + '创建' });
             timeDiff = (currentTime - item.updated_time) * 1000;
             item.topics.push({ name: formatTimeAgo(timeDiff) + '更新' });
