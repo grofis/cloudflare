@@ -103,15 +103,15 @@
                                 </template>
                             </template>
                             <template #avatar>
-                                <a :href="`https://www.zhihu.com/people/${item.author.urlToken}`" target="_blank"
+                                <a :href="`https://www.zhihu.com/people/${item.author?.urlToken}`" target="_blank"
                                     class="author-link">
-                                    <a-tooltip placement="top" :title="item.author.name">
+                                    <a-tooltip placement="top" :title="item.author?.name">
                                         <div class="avatar-container">
-                                            <a-avatar size="large" :src="item.author.avatarUrl"
+                                            <a-avatar size="large" :src="item.author?.avatarUrl"
                                                 style="background-color: #87d068">
                                             </a-avatar>
                                             <a-typography-text type="secondary" class="author-name">
-                                                {{ truncateName(item.author.name) }}
+                                                {{ truncateName(item.author?.name) }}
                                             </a-typography-text>
                                         </div>
                                     </a-tooltip>
@@ -127,6 +127,10 @@
 
 
 <script setup>
+import moment from 'moment';
+import 'moment/dist/locale/zh-cn';  // 导入中文语言包
+moment.locale('zh-cn');  // 设置为中文
+
 import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
@@ -191,6 +195,9 @@ const handleChange = (tag, checked) => {
 };
 
 const truncateName = (name) => {
+    if (!name) {
+        return '';
+    }
     return name.slice(0, 3);
 }
 
@@ -299,7 +306,7 @@ const fetchQuestions = async () => {
         console.log(`网络请求耗时: ${duration.toFixed(2)}ms`);
         console.log(`数据长度: ${data.length}`);
 
-        saveTime.value = data.saveTime + `获取`
+        saveTime.value = moment(data[0].saveTime).format('MM-DD HH:mm:ss') + ' 获取';
         data.map(item => {
             let temp = item.new_pv + item.new_follow_num * 1.5 + item.new_upvote_num * 1.2
             let num = 0
@@ -309,7 +316,9 @@ const fetchQuestions = async () => {
             item.num = num
             const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
             let timeDiff = (currentTime - item.created) * 1000; // 转换为毫秒
-            
+            if (!item.topics) {
+                item.topics = []
+            }
             item.topics.push({ name: formatTimeAgo(timeDiff) + '创建' });
             timeDiff = (currentTime - item.updated_time) * 1000;
             item.topics.push({ name: formatTimeAgo(timeDiff) + '更新' });
