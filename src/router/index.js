@@ -7,6 +7,7 @@ import Cctv from '../components/Cctv.vue'
 import Btc from '../components/Btc.vue'
 import Stock from '../components/Stock.vue'
 import Twitter from '../components/Twitter.vue'
+import ZhihuSearch from '../components/ZhihuSearchResults.vue'
 const routes = [
   
   {
@@ -44,6 +45,11 @@ const routes = [
     path: '/x',
     name: 'Twitter',
     component: Twitter
+  },
+  {
+    path: '/zhihu/search',
+    name: 'ZhihuSearch',
+    component: ZhihuSearch
   }
 ]
 

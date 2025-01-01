@@ -7,7 +7,7 @@
             <a-typography-paragraph v-html="questionData?.detail">
             </a-typography-paragraph>
             <a-typography-paragraph>
-                判断结果:{{ questionData?.judgment.score }}分，{{ questionData?.judgment.reason }}
+                判断结果:{{ judgment.score }}分，{{ judgment.reason }}
             </a-typography-paragraph>
             <a-typography-paragraph>
                 {{ questionData?.answer_num }}
@@ -61,6 +61,8 @@
                                         ·{{ item?.time_ago_update }}
                                         <a-typography-text type="secondary">更新</a-typography-text>
                                     </template>
+                                    ·{{ item?.content_length }}
+                                    <a-typography-text type="secondary">字</a-typography-text>
                                 </div>
                             </template>
                             <template #avatar><a-avatar :src="item.author.avatar_url.split('?')[0]" /></template>
@@ -103,6 +105,56 @@ const questionData = ref(null);
 let listData = reactive([]);
 const filters = ref('1');
 const saveTime = ref('');
+
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+
+const judgment = ref('');
+
+async function generateStory() {
+    try {
+        console.log('generateStory:', import.meta.env.VITE_GOOGLE_API_KEY)
+
+        // Initialize the GoogleGenerativeAI with your API key
+        const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY); // Replace with your actual API key
+
+        // Define the model and prompt
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        let text = 'Evaluate the following content for its positivity and constructiveness. Consider aspects that are interesting, joyful, and worth spreading as positive and constructive. Conversely, consider complaints, verbal attacks, focus on the dark side of society, and deviation from mainstream values as negative and destructive. Provide a score from 1 to 10 for positive and constructive content, and -1 to -10 for negative and destructive content.'
+        text += '\n\n'
+        text += 'Please return the evaluation in the following JSON format: {"isPositive": true/false, "score": [score], "reason": "[detailed reason in Chinese]"}.'
+        text += '\n\n'
+        text += `Here is the content to evaluate:`
+        text += '\n\n'
+        text += `Title: ${questionData.value.title}\n`
+        text += `Detail:${questionData.value.detail}\n`
+        // const prompt = "Write a story about a magic backpack.";
+
+        // Generate content
+        const result = await model.generateContent(text);
+        const response = await result.response;
+        let temp = await response.text();
+        judgment.value = parseGeminiResponse(temp)
+        console.log('story:', judgment.value)
+    } catch (error) {
+        console.error('Error generating story:', error);
+    }
+}
+
+const parseGeminiResponse = (responseText) => {
+    try {
+        // 使用正则表达式匹配 JSON 内容
+        const jsonMatch = responseText.match(/json\s*({[\s\S]*?})\s*/);
+        if (jsonMatch && jsonMatch[1]) {
+            // 解析匹配到的 JSON 字符串
+            return JSON.parse(jsonMatch[1]);
+        }
+        throw new Error('No valid JSON found in response');
+    } catch (error) {
+        console.error('Error parsing response:', error);
+        return null;
+    }
+};
 
 //常量配置 
 const createActionItems = (item) => [
@@ -162,6 +214,21 @@ const fetchAnswersData = async () => {
     }
 };
 
+// 处理图片宽度的函数
+const processImageWidth = (detail) => {
+    if (!detail) return '';
+
+    // 使用正则表达式找到所有 img 标签并添加宽度样式
+    return detail.replace(/<img[^>]*>/g, (match) => {
+        // 如果已经有 style 属性，在其中添加 width
+        if (match.includes('style="')) {
+            return match.replace('style="', 'style="width: 300px; ');
+        }
+        // 如果没有 style 属性，添加新的 style 属性
+        return match.replace('>', ' style="width: 300px;">');
+    });
+};
+
 const fetchQuestionDetails = async () => {
     try {
         const baseUrl = `${import.meta.env.VITE_API_URL}/zhihu/`
@@ -174,7 +241,7 @@ const fetchQuestionDetails = async () => {
         }
 
         const data = await response.json();  // 正确解析 JSON
-        // console.log('data response:', JSON.stringify(data));
+        console.log('data response:', JSON.stringify(data));
 
         // 从 initialState.entities.questions 中获取问题数据
         const questionDetails = data.initialState.entities.questions[questionId.value];
@@ -186,8 +253,12 @@ const fetchQuestionDetails = async () => {
             questionObj.pv = questionDetails.visitCount
             questionObj.created = questionDetails.created
             questionObj.updatedTime = questionDetails.updatedTime
-            questionObj.detail = questionDetails.detail
-            questionObj.judgment = data.judgment
+
+
+
+            // 在设置 detail 时处理图片
+            questionObj.detail = processImageWidth(questionDetails.detail);
+            questionObj.judgment = data.judgment || ''
             const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
             let timeDiff = (currentTime - questionDetails.created) * 1000; // 转换为毫秒
             questionObj.time_ago_create = formatTimeAgo(timeDiff);
@@ -296,8 +367,8 @@ onMounted(() => {
     // 打印完整 URL 以查看格式
     questionId.value = window.location.pathname.split('/').pop();
 
-
     fetchQuestionDetails().then(() => {
+        generateStory()
         // 获取答案数据
         fetchAnswersData();
     })

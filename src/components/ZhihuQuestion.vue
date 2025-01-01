@@ -1,16 +1,5 @@
 <template>
-    <div class="container">
-        <h1>{{ title }}</h1>
-        <div class="input-section">
-            <input v-model="inputText" placeholder="请输入关键词..." @keyup.enter="addText">
-            <button @click="addText">搜索</button>
-        </div>
-        <div class="text-list">
-            <div v-for="(text, index) in texts" :key="index" class="text-item">
-                {{ text }}
-                <button class="delete-btn" @click="deleteText(index)">删除</button>
-            </div>
-        </div>
+    <div class="container" style="background-color: white;">
         <a-row justify="start">
             <a-col :span="4" class="icon-container">
                 <router-link :to="'/cctv'" target="_blank">
@@ -50,6 +39,25 @@
             </a-col>
         </a-row>
 
+        <div class="input-section">
+            <input v-model="inputText" placeholder="请输入关键词..." @keyup.enter="addText">
+            <button @click="addText" class="search-btn">搜索</button>
+        </div>
+        <div class="text-list">
+            <div v-for="(text, index) in texts" :key="index" class="text-item">
+                {{ text }}
+                <button class="delete-btn" @click="deleteText(index)">删除</button>
+            </div>
+        </div>
+        <div>
+            <div>
+                <a-checkable-tag v-for="topic in topics" :key="topic.id" :checked="selectedTopicId === topic.id"
+                    @change="checked => handleTopicChange(topic.id, checked)">
+                    {{ topic.name }}
+                </a-checkable-tag>
+            </div>
+        </div>
+
         <div class="radio-group-container">
             <div class="text-wrapper">
                 <a-typography-text type="secondary">{{ saveTime }}</a-typography-text>
@@ -87,14 +95,14 @@
                     <a-skeleton avatar :title="false" :loading="!!item.loading" active>
                         <a-list-item-meta>
                             <template #description>
-                                
-                                    <div>
-                                        {{ `${item.new_answer_num}/${item.answer_num}回答· ` }}
-                                        {{ `${item.new_upvote_num}/${item.upvote_num}赞同·` }}
-                                        {{ `${item.new_follow_num}/${item.follow_num}关注·` }}
-                                        {{ `${formatNumber(item.new_pv)}/${formatNumber(item.pv)}浏览` }}
-                                    </div>
-                                
+
+                                <div>
+                                    {{ `${item.new_answer_num}/${item.answer_num}回答· ` }}
+                                    {{ `${item.new_upvote_num}/${item.upvote_num}赞同·` }}
+                                    {{ `${item.new_follow_num}/${item.follow_num}关注·` }}
+                                    {{ `${formatNumber(item.new_pv)}/${formatNumber(item.pv)}浏览` }}
+                                </div>
+
                             </template>
                             <template #title>
                                 <a :href="item.url" target="_blank">{{ item.title }}</a>
@@ -135,9 +143,7 @@ moment.locale('zh-cn');  // 设置为中文
 
 import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-const router = useRouter();
-const initLoading = ref(false);
-const loading = ref(false);
+
 import { formatTimeAgo } from '@/utils/timeUtils'
 import {
     GlobalOutlined,
@@ -148,6 +154,25 @@ import {
     StockOutlined
 } from '@ant-design/icons-vue';
 
+const router = useRouter();
+const initLoading = ref(false);
+const loading = ref(false);
+
+// 使用数组渲染按钮
+const topics = [
+    { id: '1000013', name: '科技互联网' },
+    { id: '1000002', name: '科学工程' },
+    { id: '1000012', name: '经济与管理' },
+    { id: '1000021', name: '人文' },
+    { id: '1000010', name: '运动健身' },
+    { id: '1000025', name: '体育竞技' },
+    { id: '1000022', name: '教育' },
+    { id: '1000020', name: '艺术' },
+    { id: '1000028', name: '娱乐' },
+    { id: '1000011', name: '旅行' },
+    { id: '1000009', name: '数码' }
+];
+
 
 
 
@@ -155,6 +180,11 @@ const title = ref('熊猫说')
 const inputText = ref('')
 const texts = ref([])
 const saveTime = ref('')
+const selectedTopicId = ref('1000013');
+const handleTopicChange = (topicId, checked) => {
+    selectedTopicId.value = checked ? topicId : null;
+    handleTopicClick(topicId);  // 调用原有的点击处理函数
+};
 
 const tagsData = reactive([
     { name: '默认', asc: '', desc: '', type: 'default', order: null },
@@ -230,20 +260,29 @@ const sortQuestions = (type, order) => {
 const addText = () => {
     if (inputText.value.trim()) {
         texts.value.push(inputText.value)
-        const questionId = extractQuestionId(inputText.value);
+        if (inputText.value.includes('https://www.zhihu.com/question/')) {
+            const questionId = extractQuestionId(inputText.value);
 
-        inputText.value = ''
-        console.log('questionId:', questionId)
-        if (questionId) {
+            inputText.value = ''
+            console.log('questionId:', questionId)
+            if (questionId) {
+                const route = router.resolve({
+                    name: 'Answers',
+                    params: { id: questionId }
+                });
+                console.log('Generated URL:', route.href);  // 打印实际生成的 URL
+
+                window.open(route.href, '_blank');
+            }
+        } else {
             const route = router.resolve({
-                name: 'Answers',
-                params: { id: questionId }
+                name: 'ZhihuSearch',
+                params: { keywords: inputText.value }
             });
             console.log('Generated URL:', route.href);  // 打印实际生成的 URL
 
             window.open(route.href, '_blank');
         }
-
     }
 }
 
@@ -284,14 +323,14 @@ const formatNumber = (num) => {
     return num;
 };
 
-const fetchQuestions = async () => {
+const handleTopicClick = async (topicId) => {
     const loadingStartTime = performance.now();  // Record the start time of loading
     initLoading.value = true; // Set loading state
     try {
         let startTime = performance.now();  // 开始时间
         // let url = `https://sunziagent.com/zhihu/data`
-        // const url = `${import.meta.env.VITE_API_URL}/zhihu/data`
-        let url = `${import.meta.env.VITE_API_URL}/zhihu/current`
+        // const url = `${import.meta.env.VITE_API_URL}/zhihu/data?topicId=${topicId}`
+        let url = `${import.meta.env.VITE_API_URL}/zhihu/current?topicId=${topicId}`
         console.log('请求URL:', url)
 
         const response = await fetch(url, {
@@ -352,7 +391,7 @@ const fetchQuestions = async () => {
 };
 
 onMounted(() => {
-    fetchQuestions(); // Fetch questions when the component is mounted
+    handleTopicClick(topics[0].id); // Fetch questions when the component is mounted
 });
 
 const onLoadMore = () => { }
@@ -450,6 +489,7 @@ h1 {
     display: flex;
     gap: 10px;
     margin-bottom: 16px;
+    margin-top: 8px;
 }
 
 input {
@@ -459,7 +499,7 @@ input {
     border-radius: 4px;
 }
 
-button {
+.search-btn {
     padding: 8px 16px;
     background-color: #42b983;
     color: white;
@@ -468,7 +508,7 @@ button {
     cursor: pointer;
 }
 
-button:hover {
+.search-btn:hover {
     background-color: #3aa876;
 }
 
