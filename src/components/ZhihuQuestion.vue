@@ -160,6 +160,7 @@ const loading = ref(false);
 
 // 使用数组渲染按钮
 const topics = [
+    { id: '0', name: '全部' },
     { id: '1000013', name: '科技互联网' },
     { id: '1000002', name: '科学工程' },
     { id: '1000012', name: '经济与管理' },
@@ -180,7 +181,7 @@ const title = ref('熊猫说')
 const inputText = ref('')
 const texts = ref([])
 const saveTime = ref('')
-const selectedTopicId = ref('1000013');
+const selectedTopicId = ref('0');
 const handleTopicChange = (topicId, checked) => {
     selectedTopicId.value = checked ? topicId : null;
     handleTopicClick(topicId);  // 调用原有的点击处理函数

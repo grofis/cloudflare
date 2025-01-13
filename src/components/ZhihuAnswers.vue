@@ -50,7 +50,7 @@
                         <a-list-item-meta>
                             <template #title>
                                 <a :href="item.name">{{ item.author.name }}</a>
-                                <a-tag color="#2db7f5" v-if="item?.isFiltered">筛选结果</a-tag>
+                                <a-tag color="#50c8f8" v-if="item?.isFiltered">筛选结果</a-tag>
                             </template>
                             <template #description>
                                 <div>
@@ -122,7 +122,7 @@ async function generateStory() {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         let text = 'Evaluate the following content for its positivity and constructiveness. Consider aspects that are interesting, joyful, and worth spreading as positive and constructive. Conversely, consider complaints, verbal attacks, focus on the dark side of society, and deviation from mainstream values as negative and destructive. Provide a score from 1 to 10 for positive and constructive content, and -1 to -10 for negative and destructive content.'
         text += '\n\n'
-        text += 'Please return the evaluation in the following JSON format: {"isPositive": true/false, "score": [score], "reason": "[detailed reason in Chinese]"}.'
+        text += 'Please directly provide the judgment score and give the assessment reasons in Chinese. The reasons must be concise, clear, and compelling, either directly extracted from the content or summarized by you, within 50 characters.Return the evaluation in the following JSON format: {"isPositive": true/false, "score": [score], "reason": "[detailed reason in Chinese]"}.'
         text += '\n\n'
         text += `Here is the content to evaluate:`
         text += '\n\n'
