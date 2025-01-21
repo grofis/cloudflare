@@ -8,6 +8,8 @@ import Btc from '../components/Btc.vue'
 import Stock from '../components/Stock.vue'
 import Twitter from '../components/Twitter.vue'
 import ZhihuSearch from '../components/ZhihuSearchResults.vue'
+import HighLikedAnswers from '../components/HighLikedAnswers.vue'
+import Podcast from '../components/Podcast.vue'
 const routes = [
   
   {
@@ -50,6 +52,16 @@ const routes = [
     path: '/zhihu/search',
     name: 'ZhihuSearch',
     component: ZhihuSearch
+  },
+  {
+    path: '/zhihu/high',
+    name: 'HighLikedAnswers',
+    component: HighLikedAnswers
+  },
+  {
+    path: '/podcast',
+    name: 'Podcast',
+    component: Podcast
   }
 ]
 

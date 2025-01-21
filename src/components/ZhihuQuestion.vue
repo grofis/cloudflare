@@ -38,6 +38,14 @@
                 </router-link>
             </a-col>
         </a-row>
+        <a-row justify="start" style="margin-top: 10px;">
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/zhihu/high'" target="_blank">
+                    <StarOutlined :style="{ color: '#4CAF50' }" />
+                    <div>高赞</div>
+                </router-link>
+            </a-col>
+        </a-row>
 
         <div class="input-section">
             <input v-model="inputText" placeholder="请输入关键词..." @keyup.enter="addText">
@@ -151,7 +159,8 @@ import {
     TwitterOutlined,
     BulbOutlined,
     UserOutlined,
-    StockOutlined
+    StockOutlined,
+    StarOutlined
 } from '@ant-design/icons-vue';
 
 const router = useRouter();
