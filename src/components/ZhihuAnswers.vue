@@ -50,7 +50,9 @@
                         <a-list-item-meta>
                             <template #title>
                                 <a :href="item.name">{{ item.author.name }}</a>
-                                <a-tag color="#50c8f8" v-if="item?.isFiltered">筛选结果</a-tag>
+                                <a-typography-text type="secondary" style="margin-left: 2px;">{{
+                                    item.author.follower_count }}粉</a-typography-text>
+                                <a-tag color="#50c8f8" style="margin-left: 3px;" v-if="item?.isFiltered">筛选结果</a-tag>
                             </template>
                             <template #description>
                                 <div>
@@ -70,7 +72,7 @@
                         </a-list-item-meta>
                         <!-- {{ item.excerpt.length > 150 ? item.excerpt.substring(0, 150) + '...' : item.excerpt }} -->
                         {{ item.excerpt }}
-                        <a :href="`${questionUrl}${questionId}/answer/${item.answer_id}`" target="_blank">跳转</a>
+                        <a :href="`${questionUrl}${questionId}/answer/${item.id}`" target="_blank">跳转</a>
                         <a-row v-if="item.images.length > 0">
                             <a-image-preview-group>
                                 <!-- content第一条内容是文字，所以要item.content.slice(1)去除 -->
@@ -184,6 +186,7 @@ const fetchAnswersData = async () => {
 
         const response = await fetch(url);
         const data = await response.json();
+        console.log('fetchAnswersData', data)
 
         // 处理数据
         const processedData = data.map(processAnswerData);
@@ -241,11 +244,11 @@ const fetchQuestionDetails = async () => {
         }
 
         const data = await response.json();  // 正确解析 JSON
-        console.log('data response:', JSON.stringify(data));
+        // console.log('data response:', JSON.stringify(data));
 
         // 从 initialState.entities.questions 中获取问题数据
         const questionDetails = data.initialState.entities.questions[questionId.value];
-
+        console.log('data response:', questionDetails)
         if (questionDetails) {
             let questionObj = {}
             questionObj.title = questionDetails.title
@@ -290,16 +293,18 @@ const fetchQuestionDetails = async () => {
 
 const processNewAnswerData = (item) => {
     // Create a reaction object that matches the expected format
+    console.log('processNewAnswerData:', item.thanksCount, item.voteupCount, item.commentCount)  
     const reaction = {
         thanks_count: item.thanksCount,
         voteup_count: item.voteupCount,
         comment_count: item.commentCount
     };
+    console.log('processNewAnswerData:', reaction)
 
     // Create processed item with all required fields
     const processedItem = {
         ...item,
-        reaction: JSON.stringify(reaction), // Match the expected input format for processAnswerData
+        ...reaction, // 添加 reaction 的值到 processedItem
         created_time: item.createdTime,
         updated_time: item.updatedTime,
         author: { name: item.author.name, headline: item.author.headline, avatar_url: item.author.avatarUrl },
@@ -314,12 +319,7 @@ const processNewAnswerData = (item) => {
 
 //数据处理函数
 const processAnswerData = (item) => {
-    // 解析和合并 reaction 数据
-    const reaction = JSON.parse(item.reaction);
-    Object.assign(item, reaction);
-
     // 计算时间差并格式化
-
     const currentTime = Math.floor(Date.now() / 1000); // 当前时间戳（秒）
     let timeDiff = (currentTime - item.created_time) * 1000; // 转换为毫秒
 
@@ -368,7 +368,7 @@ onMounted(() => {
     questionId.value = window.location.pathname.split('/').pop();
 
     fetchQuestionDetails().then(() => {
-        generateStory()
+        // generateStory()
         // 获取答案数据
         fetchAnswersData();
     })

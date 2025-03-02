@@ -45,7 +45,26 @@
                     <div>高赞</div>
                 </router-link>
             </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/zhihu/hot'" target="_blank">
+                    <FireOutlined :style="{ color: '#FFA000' }" />
+                    <div>热门</div>
+                </router-link>
+            </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/translate'" target="_blank">
+                    <TranslationOutlined :style="{ color: '#0066CC' }" />
+                    <div>翻译</div>
+                </router-link>
+            </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/fund'" target="_blank">
+                    <LineChartOutlined :style="{ color: '#009933' }" />
+                    <div>基金</div>
+                </router-link>
+            </a-col>
         </a-row>
+        
 
         <div class="input-section">
             <input v-model="inputText" placeholder="请输入关键词..." @keyup.enter="addText">
@@ -160,7 +179,10 @@ import {
     BulbOutlined,
     UserOutlined,
     StockOutlined,
-    StarOutlined
+    StarOutlined,
+    FireOutlined,
+    TranslationOutlined,
+    LineChartOutlined
 } from '@ant-design/icons-vue';
 
 const router = useRouter();

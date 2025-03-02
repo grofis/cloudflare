@@ -10,6 +10,10 @@ import Twitter from '../components/Twitter.vue'
 import ZhihuSearch from '../components/ZhihuSearchResults.vue'
 import HighLikedAnswers from '../components/HighLikedAnswers.vue'
 import Podcast from '../components/Podcast.vue'
+import ZhihuHot from '../components/ZhihuHot.vue'
+import Translate from '../components/Translate.vue'
+import Fund from '../components/Fund.vue'
+
 const routes = [
   
   {
@@ -54,6 +58,11 @@ const routes = [
     component: ZhihuSearch
   },
   {
+    path: '/zhihu/hot',
+    name: 'ZhihuHot',
+    component: ZhihuHot
+  },
+  {
     path: '/zhihu/high',
     name: 'HighLikedAnswers',
     component: HighLikedAnswers
@@ -62,6 +71,16 @@ const routes = [
     path: '/podcast',
     name: 'Podcast',
     component: Podcast
+  },
+  {
+    path: '/translate',
+    name: 'Translate',
+    component: Translate
+  },
+  {
+    path: '/fund',
+    name: 'Fund',
+    component: Fund
   }
 ]
 
