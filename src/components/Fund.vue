@@ -1,31 +1,43 @@
 <template>
     <div class="fund-table-container">
         <div class="radio-group-wrapper">
-            <a-radio-group v-model:value="showType" style="margin-bottom: 16px">
+            <a-radio-group v-model:value="fundType" @change="handleRadioChange" style="margin-bottom: 16px">
                 <a-radio-button value="all">所有</a-radio-button>
                 <a-radio-button value="etf">ETF</a-radio-button>
+                <a-radio-button value="industry">行业</a-radio-button>
             </a-radio-group>
         </div>
-        <a-table :columns="columns" :data-source="tableData" @change="handleTableChange" :pagination="{ pageSize: 20 }"
-            :scroll="{ x: 1300 }">
-            <template #bodyCell="{ column, record }">
-                <template v-if="column.dataIndex === 'F003N_FUND33' ||
-                    column.dataIndex === 'F008' ||
-                    column.dataIndex === 'F009' ||
-                    column.dataIndex === 'F010' ||
-                    column.dataIndex === 'F011'">
-                    <div style="display: flex; align-items: center; gap: 8px">
-                        <span>{{ record[column.dataIndex] }}%</span>
-                        <a-tag color="green">
-                            {{ record[`${column.dataIndex}_index`] === 1 ? '🏆 1' :
-                                record[`${column.dataIndex}_index`] === 2 ? '🥈 2' :
-                                    record[`${column.dataIndex}_index`] === 3 ? '🥉 3' :
-                                        record[`${column.dataIndex}_index`] }}
-                        </a-tag>
-                    </div>
+        <template v-if="fundType === 'all' || fundType === 'etf'">
+            <a-space :size="[0, 8]" wrap style="margin: 10px 0">
+                <a-checkable-tag v-for="date in dates" :key="date" :checked="selectedDate === date"
+                    @change="checked => handleDateChange(date, checked)">
+                    {{ date }}
+                </a-checkable-tag>
+            </a-space>
+            <a-table :columns="columns" :data-source="tableData" @change="handleTableChange"
+                :pagination="{ pageSize: 20 }" :scroll="{ x: 1300 }">
+                <template #bodyCell="{ column, record }">
+                    <template v-if="column.dataIndex === 'F003N_FUND33' ||
+                        column.dataIndex === 'F008' ||
+                        column.dataIndex === 'F009' ||
+                        column.dataIndex === 'F010' ||
+                        column.dataIndex === 'F011'">
+                        <div style="display: flex; align-items: center; gap: 8px">
+                            <span>{{ record[column.dataIndex] }}%</span>
+                            <a-tag color="green">
+                                {{ record[`${column.dataIndex}_index`] === 1 ? '🏆 1' :
+                                    record[`${column.dataIndex}_index`] === 2 ? '🥈 2' :
+                                        record[`${column.dataIndex}_index`] === 3 ? '🥉 3' :
+                                            record[`${column.dataIndex}_index`] }}
+                            </a-tag>
+                        </div>
+                    </template>
                 </template>
-            </template>
-        </a-table>
+            </a-table>
+        </template>
+        <template v-else>
+            <IndustryList />
+        </template>
     </div>
 </template>
 
@@ -1656,56 +1668,10 @@ const fundsArray = [
         "F015N_FUND33": "-19.05"
     }
 ]
-const showType = ref('all');
-const tableData = reactive(fundsArray);
-
-// 添加各个维度的排序索引
-const addSortIndexes = () => {
-    // 需要添加索引的字段列表
-    const fields = ['F003N_FUND33', 'F008', 'F009', 'F010', 'F011'];
-
-    fields.forEach(field => {
-        // 创建临时数组进行排序
-        const sortedArray = [...tableData].sort((a, b) =>
-            parseFloat(b[field] || 0) - parseFloat(a[field] || 0)
-        );
-
-        // 添加索引
-        sortedArray.forEach((item, index) => {
-            // 在原数据中找到对应项并添加索引
-            const originalItem = tableData.find(i => i.code === item.code);
-            if (originalItem) {
-                originalItem[`${field}_index`] = index + 1;
-            }
-        });
-    });
-};
-
-// 计算平均收益率并排序
-const addRanking = () => {
-    // 先计算平均收益率
-    tableData.forEach(item => {
-        let week = parseFloat(item.F003N_FUND33)
-        let month = parseFloat(item.F008) - week
-        let month3 = parseFloat(item.F009) - (month + week)
-
-        item.averageRate = (week * 1.5 + month / 4 * 1.2 + month3 / 12 * 1.1);
-    });
-
-    // 根据 averageRate 排序并添加排名
-    const sortedArray = [...tableData].sort((a, b) =>
-        b.averageRate - a.averageRate
-    );
-
-    // 添加排名
-    sortedArray.forEach((item, index) => {
-        const originalItem = tableData.find(i => i.code === item.code);
-        if (originalItem) {
-            originalItem.ranking = index + 1;
-        }
-    });
-};
-
+const fundType = ref('industry');
+let originalData = ref([])
+const tableData = reactive([]);
+const loading = ref(false);
 
 const handleTableChange = (pagination, filters, sorter) => {
     console.log(sorter)
@@ -1722,10 +1688,129 @@ const handleTableChange = (pagination, filters, sorter) => {
     }
 };
 
+const handleRadioChange = (value) => {
+    // console.log('fundType:', fundType.value, value)
+    // fundType.value = value
+
+    if (fundType.value !== 'industry') {
+        fetchData()
+    }
+}
+
+let fundObj = { 'all': { url: '/fund/rank', type: 'fund' }, 'etf': { url: '/fund/etf', type: 'etf' }, 'industry': { url: '/fund/industry', type: 'industry' } }
+// 获取数据并处理
+// 修改 fetchData 中的数据处理
+const fetchData = async () => {
+    if (fundType.value === 'industry') {
+        return
+    }
+    loading.value = true;
+    try {
+        console.log('fundType:', fundType.value, fundObj[fundType.value])
+        const url = `${import.meta.env.VITE_API_URL}${fundObj[fundType.value].url}?date=${selectedDate.value}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        console.log('result:', url, result)
+
+        // 数组转回对象：根据预定义的属性名顺序还原
+        const setArray2Object = (arr) => {
+            if (!Array.isArray(arr)) return {};
+            const keys = [
+                "code", "typename", "net", "name", "newnet",
+                "newdate", "net1", "shstat", "sgstat", "clrq",
+                "orgid", "orgname", "prerate", "F003N_FUND33",
+                "F005", "F008", "F009", "F010", "F011", "F012",
+                "F014N_FUND33", "F015N_FUND33"
+            ];
+            return Object.fromEntries(
+                keys.map((key, index) => [key, arr[index]])
+            );
+        };
+
+
+        // 转换数据格式
+        let formattedData = result.map(arr => setArray2Object(arr));
+
+        // 添加各个维度的排序索引
+        const addSortIndexes = (data) => {
+            const fields = ['F003N_FUND33', 'F008', 'F009', 'F010', 'F011'];
+            fields.forEach(field => {
+                const sortedArray = [...data].sort((a, b) =>
+                    parseFloat(b[field] || 0) - parseFloat(a[field] || 0)
+                );
+
+                sortedArray.forEach((item, index) => {
+                    const originalItem = data.find(i => i.code === item.code);
+                    if (originalItem) {
+                        originalItem[`${field}_index`] = index + 1;
+                    }
+                });
+            });
+            return data;
+        };
+
+        // 计算平均收益率并添加排名
+        const addRanking = (data) => {
+            // 计算平均收益率
+            data.forEach(item => {
+                let week = parseFloat(item.F003N_FUND33 || 0);
+                let month = parseFloat(item.F008 || 0) - week;
+                let month3 = parseFloat(item.F009 || 0) - (month + week);
+                item.averageRate = (week * 1.5 + month / 4 * 1.2 + month3 / 12 * 1.1);
+            });
+
+            // 根据 averageRate 排序并添加排名
+            const sortedArray = [...data].sort((a, b) =>
+                b.averageRate - a.averageRate
+            );
+
+            sortedArray.forEach((item, index) => {
+                const originalItem = data.find(i => i.code === item.code);
+                if (originalItem) {
+
+                    originalItem.ranking = index + 1;
+                }
+            });
+            return data;
+        };
+
+        // 应用数据处理函数
+        formattedData = addSortIndexes(formattedData);
+        formattedData = addRanking(formattedData);
+
+        // 更新表格数据
+        originalData.value = formattedData;
+        tableData.length = 0
+        tableData.push(...formattedData);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    } finally {
+        loading.value = false;
+    }
+};
+
+const dates = ref([])
+const selectedDate = ref('')
+
+const fetchDates = async () => {
+    const url = `${import.meta.env.VITE_API_URL}/fund/dates`;
+    const response = await fetch(url);
+    const result = await response.json();
+    dates.value = result.data
+    selectedDate.value = dates.value.slice(-1)[0]
+}
+
+const handleDateChange = (date, checked) => {
+    selectedDate.value = date
+    console.log('selectedDate:', selectedDate.value)
+    fetchData()
+}
+
 // 在初始化数据时调用
 onMounted(() => {
-    addSortIndexes();
-    addRanking();  // 添加这行
+    fetchDates().then(() => {
+        fetchData()
+    })
 });
 
 </script>

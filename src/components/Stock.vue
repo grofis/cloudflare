@@ -1,5 +1,12 @@
 <template>
-    <a-table :columns="columns" :data-source="data" :scroll="{ x: 2500 }" :loading="loading" :pagination="{
+    <stock-chart />
+    <a-space :size="[0, 8]" wrap style="margin: 10px 0">
+        <a-checkable-tag v-for="tag in tagsData" :key="tag.code" :checked="selectedTag === tag.code"
+            @change="checked => handleChange(tag.code, checked)">
+            {{ tag.title }}
+        </a-checkable-tag>
+    </a-space>
+    <a-table :columns="columns" :data-source="data" :scroll="{ x: 1000 }" :loading="loading" :pagination="{
         pageSize: 100,
         showSizeChanger: true,
         showQuickJumper: true,
@@ -8,20 +15,23 @@
 </template>
 
 <script setup lang="jsx">
-import { h, ref, onMounted } from 'vue'
+import { h, ref, reactive, onMounted } from 'vue'
 
 const columns = [
     {
         title: '序号',
-        dataIndex: 'f1',
-        key: 'f1',
-        customRender: ({ text, record, index }) => index + 1
+        dataIndex: 'index',
+        key: 'index',
+        width: 70,  // 序号列稍微宽一点
+        fixed: 'left',  // 固定在左侧
+        customRender: ({ text }) => text
     },
     {
         title: '股票代码',
-        dataIndex: 'f12',
-        key: 'f12',
-        width: 100,
+        dataIndex: 'code',
+        key: 'code',
+        width: 90,  // 代码需要6位数字加链接
+        fixed: 'left',  // 固定在左侧
         customRender: ({ text }) => (
             <a href={`https://quote.eastmoney.com/${text}.html`}
                 target="_blank"
@@ -32,11 +42,12 @@ const columns = [
     },
     {
         title: '股票简称',
-        dataIndex: 'f14',
-        key: 'f14',
-        width: 100,
+        dataIndex: 'name',
+        key: 'name',
+        width: 100,  // 保持不变
+        fixed: 'left',  // 固定在左侧
         customRender: ({ text, record }) => (
-            <a href={`https://quote.eastmoney.com/${record.f12}.html`}
+            <a href={`https://stockpage.10jqka.com.cn/${record.code}/`}
                 target="_blank"
                 className="stock-link">
                 {text}
@@ -45,15 +56,20 @@ const columns = [
     },
     {
         title: '最新价',
-        dataIndex: 'f2',
-        key: 'f2',
+        dataIndex: 'price',
+        key: 'price',
+        width: 85,  // 价格列稍宽，考虑小数点
+        align: 'right',  // 数字右对齐
+        sorter: (a, b) => parseFloat(a.price) - parseFloat(b.price),
+        customRender: ({ text }) => formatNumber(text)
     },
     {
         title: '涨跌幅',
-        dataIndex: 'f3',
-        key: 'f3',
-        width: 100,
-        sorter: (a, b) => parseFloat(a.f3) - parseFloat(b.f3),
+        dataIndex: 'change_percent',
+        key: 'change_percent',
+        width: 85,  // 百分比需要考虑符号和小数点
+        align: 'right',
+        sorter: (a, b) => parseFloat(a.change_percent) - parseFloat(b.change_percent),
         customRender: ({ text }) => (
             <span className={parseFloat(text) >= 0 ? 'rise-text' : 'fall-text'}>
                 {text}%
@@ -62,143 +78,43 @@ const columns = [
     },
     {
         title: '振幅',
-        dataIndex: 'f7',
-        key: 'f7',
-    },
-    {
-        title: '今开',
-        dataIndex: 'f17',
-        key: 'f17',
-        customRender: ({ text, record }) => {
-            const currentValue = parseFloat(text);
-            const previousClose = parseFloat(record.f18);
-            
-            if (currentValue === previousClose) {
-                return <span>{text}</span>;
-            }
-            
-            return (
-                <span className={currentValue < previousClose ? 'fall-text' : 'rise-text'}>
-                    {text}
-                </span>
-            );
-        }
-    },
-    {
-        title: '昨收',
-        dataIndex: 'f18',
-        key: 'f18',
-    },
-    {
-        title: '净额',
-        dataIndex: 'f21',
-        key: 'f21',
-        customRender: ({ text }) => formatNumber(text)
-    },
-    {
-        title: '成交量(手)',
-        dataIndex: 'f5',
-        key: 'f5',
-        customRender: ({ text }) => {
-            const num = parseFloat(text);
-            if (num >= 10000) {
-                return (num / 10000).toFixed(2) + '万';
-            }
-            return text;
-        }
-    },
-    {
-        title: '成交额',
-        dataIndex: 'f6',
-        key: 'f6',
-        customRender: ({ text }) => formatNumber(text)
-    },
-    {
-        title: '市场总成交额',
-        dataIndex: 'f20',
-        key: 'f20',
-        customRender: ({ text }) => formatNumber(text)
+        dataIndex: 'amplitude',
+        key: 'amplitude',
+        width: 80,
+        align: 'right',
+        customRender: ({ text }) => `${text}%`
     },
     {
         title: '换手率',
-        dataIndex: 'f8',
-        key: 'f8',
+        dataIndex: 'turnover',
+        key: 'turnover',
+        width: 85,
+        align: 'right',
+        customRender: ({ text }) => `${text}%`
     },
     {
-        title: '流入资金',
-        dataIndex: 'capital_inflow',
-        key: 'capital_inflow',
+        title: '成交额',
+        dataIndex: 'amount',
+        key: 'amount',
+        width: 110,  // 成交额列要宽一些，因为有单位
+        align: 'right',
+        customRender: ({ text }) => formatNumber(text)
     },
     {
-        title: '流出资金',
-        dataIndex: 'capital_outflow',
-        key: 'capital_outflow'
-    },
-    {
-        title: '3日排行',
-        dataIndex: 'data_3d_index_num',
-        key: 'data_3d_index_num',
-    },
-    {
-        title: '3日代码',
-        dataIndex: 'data_3d_code',
-        key: 'data_3d_code',
-    },
-    {
-        title: '3日涨跌幅',
-        dataIndex: 'data_3d_change_percent',
-        key: 'data_3d_change_percent',
-        // customRender: ({ text }) => (
-        //     <span className={parseFloat(text) >= 0 ? 'rise-text' : 'fall-text'}>
-        //         {text}%
-        //     </span>
-        // )
-    },
-    {
-        title: '3日换手率',
-        dataIndex: 'data_3d_turnover_rate',
-        key: 'data_3d_turnover_rate',
-    },
-    {
-        title: '3日净额',
-        dataIndex: 'data_3d_net_inflow',
-        key: 'data_3d_net_inflow',
-        // customRender: ({ text }) => formatNumber(text)
-    },
-    {
-        title: '5日排行',
-        dataIndex: 'data_5d_index_num',
-        key: 'data_5d_index_num',
-    },
-    {
-        title: '5日代码',
-        dataIndex: 'data_5d_code',
-        key: 'data_5d_code',
-    },
-    {
-        title: '5日涨跌幅',
-        dataIndex: 'data_5d_change_percent',
-        key: 'data_5d_change_percent',
-        // customRender: ({ text }) => (
-        //     <span className={parseFloat(text) >= 0 ? 'rise-text' : 'fall-text'}>
-        //         {text}%
-        //     </span>
-        // )
-    },
-    {
-        title: '5日换手率',
-        dataIndex: 'data_5d_turnover_rate',
-        key: 'data_5d_turnover_rate',
-    },
-    {
-        title: '5日净额',
-        dataIndex: 'data_5d_net_inflow',
-        key: 'data_5d_net_inflow',
-        // customRender: ({ text }) => formatNumber(text)
+        title: '均线走势',
+        dataIndex: 'average',
+        key: 'average',
+        width: 80,  // 调整宽度以适应图表
+        customRender: ({ text, record }) => {  // 添加 record 参数
+            if (!text) return '-';
+            return <StockAverage average={text} item={record} />;  // 传递整个 record
+        }
     }
+
 ];
 
 const loading = ref(false);
+const originalData = ref([]); // 保存原始数据
 const data = ref([]);
 
 const formatNumber = (text) => {
@@ -212,36 +128,89 @@ const formatNumber = (text) => {
 };
 
 // 获取数据并处理
+// 修改 fetchData 中的数据处理
 const fetchData = async () => {
-    loading.value = true
+    loading.value = true;
     try {
-        const url = `http://localhost:3000/eastmoney`
-        console.log('url:', url)
+        const url = `${import.meta.env.VITE_API_URL}/stock/list`;
+        const response = await fetch(url);
+        const result = await response.json();
+        console.log('result:', result)
 
-        const response = await fetch(url)
-        const result = await response.json()
-        console.log('data:', result.length, result)
+        // 转换数据格式
+        const formattedData = result.map(item => ({
+            ...item.date_data,
+            average: item.average
+        }));
 
-        // 筛选主板和中小板的股票
-        const filteredData = result.filter(item => {
-            const stockCode = item.f12;
-            // 保留以下股票：
-            // - 上海主板（600、601、603开头）
-            // - 深圳主板（000开头）
-            // - 中小板（002开头）
-            return /^(600|601|603|000|002)\d{3}$/.test(stockCode);
-        });
-
-        console.log('data:', filteredData.length, filteredData);
-        data.value.length = 0;
-        data.value.push(...filteredData);
-
+        originalData.value = formattedData; // 保存原始数据
+        data.value = formattedData; // 初始显示所有数据
     } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error('Error fetching data:', error);
     } finally {
-        loading.value = false
+        loading.value = false;
     }
-}
+};
+
+let tags = [{ code: 1, title: '连续上涨' }, { code: 2, title: '频繁波动' }, { code: 3, title: '昨日上榜' }]
+const tagsData = reactive(tags);
+const selectedTag = ref(''); // 用单个变量记录选中的tag
+
+const handleChange = (code, checked) => {
+    selectedTag.value = checked ? code : null;
+
+    if (!checked) {
+        // 如果取消选中，显示所有数据
+        data.value = originalData.value;
+        return;
+    }
+
+    // 根据选中的标签代码筛选数据
+    switch (code) {
+        case 1: // 连续上涨
+            data.value = originalData.value.filter(item => {
+                const filter = item.average?.filter;
+                if (!filter) return false;
+
+                // 检查 filter 对象中除了 code 以外的所有字段是否都为 1
+                return Object.entries(filter)
+                    .filter(([key]) => key !== 'is_high_active') // 排除 code 字段
+                    .every(([_, value]) => value === 1);
+            });
+            break;
+        case 2: // 频繁波动
+            data.value = [...originalData.value]
+                .sort((a, b) => b.average?.filter?.is_high_active - a.average?.filter?.is_high_active)
+                .filter(item => item.average?.filter?.is_high_active >= 0.6)
+            console.log('high', data.value)
+            break;
+        case 3: // 昨日上榜
+            const filterYesterdayUp = () => {
+                return originalData.value.filter(item => {
+                    const price = item.average?.data?.price
+                    // 确保至少有4个数据点
+                    if (!price || price.length < 4) {
+                        return false
+                    }
+
+                    const close = price[price.length - 1]  // 最新收盘价
+                    const open = price[price.length - 3]   // 前天收盘价
+                    const low = price[price.length - 4]    // 更早的价格
+
+                    // 计算涨幅是否超过5%
+                    const priceChange = (close - open) / (open + low)
+                    return priceChange >= 0.05
+                })
+            }
+            const temp = filterYesterdayUp()
+            console.log(JSON.stringify(temp))
+            // 直接赋值新数组，让 Vue 的响应式系统处理更新
+            data.value = temp
+            break;
+    }
+
+    console.log('Selected code:', code, 'Checked:', checked, 'Filtered items:', data.value.length);
+};
 
 onMounted(() => {
     fetchData()
@@ -260,5 +229,34 @@ onMounted(() => {
 :deep(.ant-table-thead > tr > th) {
     white-space: normal;
     text-align: center;
+}
+
+
+:deep(.ant-table) {
+    font-size: 13px;
+}
+
+:deep(.ant-table-thead > tr > th) {
+    white-space: normal;
+    text-align: center;
+    background: #fafafa;
+    font-weight: 600;
+}
+
+:deep(.ant-table-tbody > tr > td) {
+    padding: 8px 12px;
+}
+
+:deep(.stock-link) {
+    color: #1890ff;
+    text-decoration: none;
+}
+
+:deep(.stock-link:hover) {
+    text-decoration: underline;
+}
+
+:deep(.ant-card .ant-card-body) {
+    padding: 0px;
 }
 </style>
