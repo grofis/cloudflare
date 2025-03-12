@@ -359,9 +359,7 @@ const handleTopicClick = async (topicId) => {
     const loadingStartTime = performance.now();  // Record the start time of loading
     initLoading.value = true; // Set loading state
     try {
-        let startTime = performance.now();  // 开始时间
-        // let url = `https://sunziagent.com/zhihu/data`
-        // const url = `${import.meta.env.VITE_API_URL}/zhihu/data?topicId=${topicId}`
+        let startTime = performance.now();  
         let url = `${import.meta.env.VITE_API_URL}/zhihu/current?topicId=${topicId}`
         console.log('请求URL:', url)
 
@@ -446,10 +444,6 @@ const getTagBackgroundColor = (tag) => {
 };
 
 const handleItemClick = (item) => {
-    // 先将数据存储到 localStorage
-    // localStorage.setItem('questionData', JSON.stringify(item));
-    // console.log('item:', item)
-
     const route = router.resolve({
         name: 'Answers',
         params: { id: item.id }
