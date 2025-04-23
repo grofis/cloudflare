@@ -1,5 +1,5 @@
 <template>
-  <div id="app" style="background-color: #F4F6F9;">
+  <div id="app" >
     <router-view></router-view>
   </div>
 </template>
@@ -21,7 +21,8 @@ html {
 #app {
   margin: 0 auto;
   min-height: 100vh;
-  background: #fff;
+  background: #F3E9D4;
+  /* background: #fff; #F4F6F9; */
   /* 可选：添加手机外观 */
   /* box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); */
 }

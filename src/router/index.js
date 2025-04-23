@@ -13,9 +13,15 @@ import Podcast from '../components/Podcast.vue'
 import ZhihuHot from '../components/ZhihuHot.vue'
 import Translate from '../components/Translate.vue'
 import Fund from '../components/Fund.vue'
-
+import Magazine from '../components/Magazine.vue'
+import MagazineSearch from '../components/MagazineSearchResult.vue'
+import Fandeng from '../components/Fandeng.vue'
+import Paulgraham from '../components/Paulgraham.vue'
+import HackerNews from '../components/HackerNews.vue'
+import KeyValue from '../components/KeyValue.vue'
+import ValueDetails from '../components/ValueDetails.vue'
 const routes = [
-  
+
   {
     path: '/',
     name: 'Question',
@@ -81,6 +87,41 @@ const routes = [
     path: '/fund',
     name: 'Fund',
     component: Fund
+  },
+  {
+    path: '/magazine',
+    name: 'Magazine',
+    component: Magazine
+  },
+  {
+    path: '/magazine/search',
+    name: 'MagazineSearch',
+    component: MagazineSearch
+  },
+  {
+    path: '/fandeng',
+    name: 'fandeng',
+    component: Fandeng
+  },
+  {
+    path: '/paul',
+    name: 'paul',
+    component: Paulgraham
+  },
+  {
+    path: '/hn',
+    name: 'HackerNews',
+    component: HackerNews
+  },
+  {
+    path: '/kv',
+    name: 'KeyValue',
+    component: KeyValue
+  },
+  {
+    path: '/value',
+    name: 'ValueDetails',
+    component: ValueDetails
   }
 ]
 

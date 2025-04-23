@@ -63,8 +63,14 @@
                     <div>基金</div>
                 </router-link>
             </a-col>
+            <a-col :span="4" class="icon-container">
+                <router-link :to="'/magazine'" target="_blank">
+                    <ReadOutlined :style="{ color: '#52c41a' }" />
+                    <div>杂志</div>
+                </router-link>
+            </a-col>
         </a-row>
-        
+
 
         <div class="input-section">
             <input v-model="inputText" placeholder="请输入关键词..." @keyup.enter="addText">
@@ -90,11 +96,22 @@
                 <a-typography-text type="secondary">{{ saveTime }}</a-typography-text>
             </div>
             <div class="tags-wrapper">
-                <a-checkable-tag v-for="(tag, index) in tagsData" :key="tag.name" v-model:checked="selectTags[index]"
-                    @change="checked => handleChange(tag, checked)"
-                    :style="{ backgroundColor: getTagBackgroundColor(tag) }">
-                    {{ tag.order ? `${tag.name}${tag[tag.order]}` : tag.name }}
-                </a-checkable-tag>
+                <a-dropdown>
+                    <a class="ant-dropdown-link" @click.prevent>
+                        <a-typography-text type="secondary">
+                            {{ selectedTime.value !== 0 ? selectedTime.label : '时间' }}
+                        </a-typography-text>
+                    </a>
+                    <template #overlay>
+                        <a-menu>
+                            <a-menu-item v-for="filter in timeFilters" :key="filter.key"
+                                @click="handleTimeSelect(filter.value)">
+                                <a href="javascript:;">{{ filter.value === 0 ? '不限' : filter.label }}</a>
+                            </a-menu-item>
+                        </a-menu>
+                    </template>
+                </a-dropdown>
+
             </div>
         </div>
         <a-list class="demo-loadmore-list" :loading="initLoading" item-layout="horizontal" :data-source="questions">
@@ -182,7 +199,8 @@ import {
     StarOutlined,
     FireOutlined,
     TranslationOutlined,
-    LineChartOutlined
+    LineChartOutlined,
+    ReadOutlined
 } from '@ant-design/icons-vue';
 
 const router = useRouter();
@@ -218,45 +236,30 @@ const handleTopicChange = (topicId, checked) => {
     handleTopicClick(topicId);  // 调用原有的点击处理函数
 };
 
-const tagsData = reactive([
-    { name: '默认', asc: '', desc: '', type: 'default', order: null },
-    { name: '答案', asc: '少', desc: '多', type: 'answer_num', order: null },
-    { name: '点赞', asc: '少', desc: '多', type: 'new_upvote_num', order: null },
-    { name: '关注', asc: '少', desc: '多', type: 'new_follow_num', order: null },
-    { name: '浏览', asc: '少', desc: '多', type: 'new_pv', order: null },
-    { name: '涨粉', asc: '少', desc: '多', type: 'num', order: null }
-]);
-const selectTags = reactive([false, false, false, false, false, false]);
-const handleChange = (tag, checked) => {
-    // 更新 selectTags，确保只有当前选中的标签为 true
-    selectTags.forEach((_, index) => {
-        if (tagsData[index] === tag) {
-            if (tagsData[index].order === 'asc') {
-                tagsData[index].order = 'desc';
-                selectTags[index] = true; // 当前选中的标签保持其 checked 状态
-            } else if (tagsData[index].order === 'desc') {
-                tagsData[index].order = null;
-                selectTags[index] = false;
-            } else {
-                tagsData[index].order = 'asc';
-                selectTags[index] = true;
-            }
-        } else {
-            selectTags[index] = false; // 其他标签的 checked 状态为 false
-            tagsData[index].order = null; // 其他标签的 order 设置为 null
-        }
-    });
+const timeFilters = [
+    { key: '0', label: '不限', value: 0 },
+    { key: '24', label: '24小时内', value: 24 },
+    { key: '48', label: '48小时内', value: 48 },
+    { key: '72', label: '72小时内', value: 72 },
+    { key: '120', label: '120小时内', value: 120 }
+];
+const selectedTime = ref(timeFilters[0]);
+const handleTimeSelect = (value) => {
+    selectedTime.value = timeFilters.find(filter => filter.value === value);
+    let temp = [...srcData.value];
+    let currentTime = Date.now();
 
-    // 根据选中的标签进行排序
-    const selectedTag = tagsData.find((t, index) => selectTags[index]);
-    if (selectedTag && selectedTag.type !== 'default') {
-        sortQuestions(selectedTag.type, selectedTag.order);
-    } else {
-        questions.value.length = 0;
-        questions.value.push(...srcData.value);
+    if (value !== 0) {
+        temp = temp.filter(item => {
+            let timeDiff = currentTime - item.created * 1000; // 转换为毫秒
+            return timeDiff <= value * 3600 * 1000;
+        });
     }
-    console.log(tag, checked);
+
+    questions.value.length = 0;
+    questions.value.push(...(value === 0 ? srcData.value : temp));
 };
+
 
 const truncateName = (name) => {
     if (!name) {
@@ -359,7 +362,7 @@ const handleTopicClick = async (topicId) => {
     const loadingStartTime = performance.now();  // Record the start time of loading
     initLoading.value = true; // Set loading state
     try {
-        let startTime = performance.now();  
+        let startTime = performance.now();
         let url = `${import.meta.env.VITE_API_URL}/zhihu/current?topicId=${topicId}`
         console.log('请求URL:', url)
 

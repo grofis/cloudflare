@@ -101,6 +101,19 @@ const columns = [
         customRender: ({ text }) => formatNumber(text)
     },
     {
+        title: '连续上涨',
+        dataIndex: 'upDays',
+        key: 'upDays',
+        width: 85,
+        align: 'center',
+        sorter: (a, b) => parseFloat(a.upDays) - parseFloat(b.upDays),
+        customRender: ({ text }) => (
+            <span className={parseFloat(text) >= 0 ? 'rise-text' : 'fall-text'}>
+                {text}天
+            </span>
+        )
+    },
+    {
         title: '均线走势',
         dataIndex: 'average',
         key: 'average',
@@ -140,6 +153,7 @@ const fetchData = async () => {
         // 转换数据格式
         const formattedData = result.map(item => ({
             ...item.date_data,
+            upDays: item.average.up.up_count,
             average: item.average
         }));
 

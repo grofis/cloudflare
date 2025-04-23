@@ -1,29 +1,35 @@
 <template>
+    <context-holder />
     <div>
         <div class="input-section">
-            <a-textarea v-model:value="inputText" placeholder="textarea with clear icon" @keyup.enter="addText"
-                allow-clear />
-            <button @click="addText" size="small" type="text" class="search-btn">翻译</button>
+            <a-textarea v-model:value="inputText" :rows="rows" placeholder="textarea with clear icon"
+                @keyup.enter="addText" allow-clear />
+            <button @click="addText" size="small" type="text" class="search-btn">更新</button>
         </div>
     </div>
-    <a-list item-layout="horizontal" :data-source="data">
-        <template #renderItem="{ item }">
-            <a-list-item>
+    <a-list item-layout="vertical" :data-source="data">
+        <template #renderItem="{ item, index }">
+            <a-list-item @dblclick="editItem(item)" :key="item.key" @click="showItem(item)">
                 <a-list-item-meta>
                     <template #title>
-                        <a style="font-size: 18px;" :href="item.href" target="_blank">{{ item.title }}</a>
+                        <a style="font-size: 18px;">{{ item.key }}</a>
                     </template>
-                    
+
                     <template #description>
                         <div>
-                            <a-tag v-for="tag in item.tags" :key="tag">{{ tag }}</a-tag>
-                            <a-typography-text type="secondary">{{ item.time }}</a-typography-text>
-                            <ExpandText :text="item.source" />
-                            <ExpandText :text="item.translated" />
+                            <a-typography-text type="secondary">{{ item.value.time }}-{{
+                                `${JSON.stringify(item.value).length}字` }}</a-typography-text>
+                            <ExpandText :text="JSON.stringify(item.value)" />
                         </div>
                     </template>
                 </a-list-item-meta>
-                
+                <template #actions>
+                    <span v-for="(action, actionIndex) in actions" :key="actionIndex"
+                        @click.stop="action.onClick(item, index)" class="action-item">
+                        <component :is="action.icon" style="margin-right: 2px" />
+                        {{ action.text }}
+                    </span>
+                </template>
             </a-list-item>
         </template>
     </a-list>
@@ -31,10 +37,10 @@
 
 <script setup>
 import { formatTimeAgo } from '@/utils/timeUtils'
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, watch } from 'vue';
 import moment from 'moment';
 import { useRouter } from 'vue-router';
-import { GoogleOutlined } from '@ant-design/icons-vue';
+import { StarOutlined, LikeOutlined, MessageOutlined, FormOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import ExpandText from './child/ExpandText.vue';
 import { createFromIconfontCN } from '@ant-design/icons-vue';
@@ -42,10 +48,58 @@ const IconFont = createFromIconfontCN({
     scriptUrl: '//at.alicdn.com/t/c/font_4603537_0l6ll6wkpcx.js',
 });
 
+import { message } from 'ant-design-vue';
+const [messageApi, contextHolder] = message.useMessage();
+
+
 const data = reactive([]);
 
 const inputText = ref('');
-const judgment = ref('');
+let rows = ref(2);
+//监控文本的长度，根据长度调整行数
+watch(inputText, (newValue) => {
+    const textLength = newValue.length;
+    if (textLength > 1000) {
+        rows.value = 15;
+    } else if (textLength > 500) {
+        rows.value = 10;
+    } else if (textLength > 200) {
+        rows.value = 5;
+    } else {
+        rows.value = 2;
+    }
+});
+
+
+const editIndex = ref('');
+const actions = [
+    {
+        icon: StarOutlined,
+        text: '收藏',
+        onClick: (item, index) => {
+            console.log('收藏:', item, index);
+            // 处理收藏逻辑
+        },
+    },
+    {
+        icon: FormOutlined,
+        text: '修改',
+        onClick: (item, index) => {
+            console.log('修改:', item, index);
+            inputText.value = JSON.stringify(item.value);
+            editIndex.value = index;
+            // 处理修改逻辑
+        },
+    },
+    {
+        icon: DeleteOutlined,
+        text: '删除',
+        onClick: (item, index) => {
+            console.log('删除:', item, index);
+            deleteItem(item, index)
+        },
+    }
+];
 
 async function generateStory(text) {
     try {
@@ -103,7 +157,7 @@ async function saveData(item) {
 }
 
 async function getData() {
-    const url = `${import.meta.env.VITE_API_URL}/translate/get`
+    const url = `${import.meta.env.VITE_API_URL}/kv/keys`
     let para = {
         key: 'list',
         type: 'list'
@@ -122,15 +176,7 @@ async function getData() {
     }
     let res = await response.json();
     console.log('getData:', res)
-    res.forEach(item => {
-        item.time = moment(item.time).format('YYYY-MM-DD HH:mm:ss')
-        if (item.translator == 'Google') {
-            item.iconFont = 'icon-google'
-        } else {
-            item.iconFont = 'icon-deepseek'
-        }
-        data.push(item)
-    })
+    data.push(...res)
 }
 
 async function updateHnList() {
@@ -196,6 +242,66 @@ function addText() {
     console.log('text:', text)
 }
 
+function editItem(item) {
+    console.log('editItem:', item)
+    let text = JSON.stringify(item.value)
+    inputText.value = text
+    if (text.length > 1000) {
+        rows.value = 15
+    } else if (text.length > 500) {
+        rows.value = 10
+    } else if (text.length > 200) {
+        rows.value = 5
+    } else {
+        rows.value = 2
+    }
+}
+
+function deleteItem(item, index) {
+    console.log('deleteItem:', item, index);
+    data.splice(index, 1);
+    const url = `${import.meta.env.VITE_API_URL}/translate/delete`
+    let para = {
+        type: 'delete',
+        key: item.key,
+    }
+    let options = {
+        method: 'POST', // 指定请求方法为 POST
+        headers: {
+            'Content-Type': 'application/json', // 设置请求头，指明发送的数据格式
+        },
+        body: JSON.stringify(para), // 将数据对象转换为 JSON 字符串
+    }
+
+    fetch(url, options)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response; // 返回响应以便后续处理
+        })
+        .then(response => {
+            // 这里可以处理响应数据
+            // 例如：return response.json(); 以获取 JSON 数据
+            console.log('deleteItem:', response.json())
+            messageApi.success('删除成功!');
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+        });
+}
+
+
+const router = useRouter();
+function showItem(item) {
+    console.log('showItem:', item);
+    const url = `${window.location.origin}/value`;
+    localStorage.setItem('item', JSON.stringify(item));
+
+    // 使用命名窗口，这样相同名称的窗口会被重用
+    // window.open(url, 'valueWindow');
+}
+
 onMounted(() => {
     // generateStory()
     getData()
@@ -230,5 +336,13 @@ input {
 
 .search-btn:hover {
     background-color: #3aa876;
+}
+
+.action-item {
+    cursor: pointer;
+}
+
+.action-item:hover {
+    color: #1890ff;
 }
 </style>
