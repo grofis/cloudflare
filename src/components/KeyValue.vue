@@ -9,10 +9,10 @@
     </div>
     <a-list item-layout="vertical" :data-source="data">
         <template #renderItem="{ item, index }">
-            <a-list-item @dblclick="editItem(item)" :key="item.key" @click="showItem(item)">
+            <a-list-item :key="item.key">
                 <a-list-item-meta>
                     <template #title>
-                        <a style="font-size: 18px;">{{ item.key }}</a>
+                        <a style="font-size: 18px;">{{ item.value.title?item.value.title:item.key }}</a>
                     </template>
 
                     <template #description>
@@ -40,7 +40,7 @@ import { formatTimeAgo } from '@/utils/timeUtils'
 import { ref, onMounted, reactive, watch } from 'vue';
 import moment from 'moment';
 import { useRouter } from 'vue-router';
-import { StarOutlined, LikeOutlined, MessageOutlined, FormOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { StarOutlined, LikeOutlined, MessageOutlined,EyeOutlined, FormOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import ExpandText from './child/ExpandText.vue';
 import { createFromIconfontCN } from '@ant-design/icons-vue';
@@ -74,14 +74,6 @@ watch(inputText, (newValue) => {
 const editIndex = ref('');
 const actions = [
     {
-        icon: StarOutlined,
-        text: '收藏',
-        onClick: (item, index) => {
-            console.log('收藏:', item, index);
-            // 处理收藏逻辑
-        },
-    },
-    {
         icon: FormOutlined,
         text: '修改',
         onClick: (item, index) => {
@@ -96,9 +88,18 @@ const actions = [
         text: '删除',
         onClick: (item, index) => {
             console.log('删除:', item, index);
-            deleteItem(item, index)
+            // deleteItem(item, index)
         },
-    }
+    },
+    {
+        icon: EyeOutlined,
+        text: '浏览',
+        onClick: (item, index) => {
+            console.log('浏览:', item, index);
+            // 处理收藏逻辑
+            showItem(item)
+        },
+    },
 ];
 
 async function generateStory(text) {
@@ -136,11 +137,11 @@ async function generateStory(text) {
     }
 }
 
-async function saveData(item) {
+async function saveData(key, value) {
     const url = `${import.meta.env.VITE_API_URL}/translate/set`
     let para = {
-        key: new Date().getTime(),
-        value: item
+        key: key,
+        value: value
     }
     let options = {
         method: 'POST', // 指定请求方法为 POST
@@ -154,6 +155,9 @@ async function saveData(item) {
     if (!response.ok) {
         throw new Error('Network response was not ok');
     }
+    let res = await response.json();
+    messageApi.success(res.message)
+    getData()
 }
 
 async function getData() {
@@ -176,6 +180,7 @@ async function getData() {
     }
     let res = await response.json();
     console.log('getData:', res)
+    data.length = 0
     data.push(...res)
 }
 
@@ -203,58 +208,23 @@ async function updateHnList() {
 
 function addText() {
     let text = inputText.value.trim()
-    // console.log('addText:', text)
-
-    // // 识别文章的标题、来源、链接、标签
-    const regex = /title:\s*"([^"]+)",\s*from:\s*'([^']+)',\s*href:\s*'([^']+)',\s*tags:\s*\[([^\]]+)\],/;
-    const match = text.match(regex);
-    let item = {}
-    if (match) {
-        // Extracted information
-        item.title = match[1];
-        item.from = match[2];
-        item.href = match[3];
-        item.tags = match[4].split(',').map(tag => tag.trim().replace(/['"]/g, ''));
-
-        console.log('Title:', item.title);
-        console.log('From:', item.from);
-        console.log('Href:', item.href);
-        console.log('Tags:', item.tags);
-
-        // Remove the first four lines from the text
-        text = text.replace(regex, '').trim();
+    let temp = JSON.parse(text)
+    let src = data[editIndex.value]
+    let value = JSON.stringify(src.value)
+    if (value === text) {
+        messageApi.error('内容相同，请修改后保存')
+        return
     }
-
-    text = text.replace(/\n/g, '<br>');
-    if (text.length > 0) {
-        generateStory(text).then(temp => {
-            console.log('temp:', temp)
-            item.source = text
-            item.translated = temp
-            item.translator = "Google"
-            item.iconFont = 'icon-google'
-            item.time = new Date().toISOString()
-            data.push(item)
-            inputText.value = ''
-            saveData(item)
-        })
-    }
-    console.log('text:', text)
+    temp['updated'] = new Date().toISOString()
+    saveData(src.key, temp)
+    // inputText.value = JSON.stringify(item.value);
+    // editIndex.value = index;
 }
 
 function editItem(item) {
     console.log('editItem:', item)
     let text = JSON.stringify(item.value)
     inputText.value = text
-    if (text.length > 1000) {
-        rows.value = 15
-    } else if (text.length > 500) {
-        rows.value = 10
-    } else if (text.length > 200) {
-        rows.value = 5
-    } else {
-        rows.value = 2
-    }
 }
 
 function deleteItem(item, index) {
@@ -278,12 +248,11 @@ function deleteItem(item, index) {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
-            return response; // 返回响应以便后续处理
+            return response.json(); // 返回解析 JSON 的 Promise
         })
-        .then(response => {
-            // 这里可以处理响应数据
-            // 例如：return response.json(); 以获取 JSON 数据
-            console.log('deleteItem:', response.json())
+        .then(data => {
+            // 现在 data 是解析后的 JSON 数据
+            console.log('deleteItem:', data);
             messageApi.success('删除成功!');
         })
         .catch(error => {
@@ -292,14 +261,13 @@ function deleteItem(item, index) {
 }
 
 
-const router = useRouter();
 function showItem(item) {
     console.log('showItem:', item);
     const url = `${window.location.origin}/value`;
     localStorage.setItem('item', JSON.stringify(item));
 
     // 使用命名窗口，这样相同名称的窗口会被重用
-    // window.open(url, 'valueWindow');
+    window.open(url, 'valueWindow');
 }
 
 onMounted(() => {
@@ -327,7 +295,7 @@ input {
 .search-btn {
     margin-top: 10px;
     padding: 5px 16px;
-    background-color: #42b983;
+    background-color: #FF9933;
     color: white;
     border: none;
     border-radius: 4px;

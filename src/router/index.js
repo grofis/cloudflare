@@ -20,6 +20,7 @@ import Paulgraham from '../components/Paulgraham.vue'
 import HackerNews from '../components/HackerNews.vue'
 import KeyValue from '../components/KeyValue.vue'
 import ValueDetails from '../components/ValueDetails.vue'
+import ValueEdit from '../components/ValueEdit.vue'
 const routes = [
 
   {
@@ -122,6 +123,11 @@ const routes = [
     path: '/value',
     name: 'ValueDetails',
     component: ValueDetails
+  },
+  {
+    path: '/edit',
+    name: 'ValueEdit',
+    component: ValueEdit
   }
 ]
 

@@ -3,7 +3,7 @@
         @search="onSearch" @change="onSearchChange" />
     <a-list item-layout="vertical" :dataSource="listData" :pagination="pagination">
         <template #renderItem="{ item, index }">
-            <a-list-item @dblclick="editItem(index)">
+            <a-list-item @click="editItem(item, index)">
                 <a-list-item-meta id="hacker-news-list-item-meta" style="margin-block-end: 2px;">
                     <template #title>
                         <div>
@@ -212,17 +212,26 @@ async function getData() {
 
 
 /** 双击行进入编辑 */
-function editItem(idx) {
+function editItem(itemToCopy,idx) {
     editingIndex.value = idx
     // 获取要拷贝的项
-    const itemToCopy = listData[idx];
+    // const itemToCopy = listData[idx];
+    console.log('itemToCopy:', idx, JSON.stringify(itemToCopy))
+    let temp = {}
+    temp.title = itemToCopy.title
+    temp.trans_title = itemToCopy.translated
+    temp.href = itemToCopy.href
+    temp.tags = itemToCopy.tags
+    temp.from = `https://news.ycombinator.com/item?id=${itemToCopy.story_id}`
+    temp.created_at = itemToCopy.created_at
+    temp.updated_at = itemToCopy.updated_at
+    temp.source = 'hackernews'
+    temp.translated = ''
+    temp.type = 'hn'
+    
 
     // 将要拷贝的内容格式化为字符串
-    const textToCopy = `title: "${itemToCopy.title}",\n` +
-        `from: 'https://news.ycombinator.com/item?id=${itemToCopy.story_id}',\n` +
-        `href: '${itemToCopy.href}',\n` +
-        `tags: ${JSON.stringify(itemToCopy.tags)}`;
-
+    const textToCopy = JSON.stringify(temp)
     // 使用 Clipboard API 拷贝到剪贴板
     navigator.clipboard.writeText(textToCopy)
         .then(() => {
@@ -231,6 +240,16 @@ function editItem(idx) {
         .catch(err => {
             console.error('Failed to copy: ', err);
         });
+    showItem({ key: `${itemToCopy.story_id}`, value: temp })
+}
+
+function showItem(item) {
+    console.log('showItem:', item);
+    const url = `${window.location.origin}/edit`;
+    localStorage.setItem('item', JSON.stringify(item));
+
+    // 使用命名窗口，这样相同名称的窗口会被重用
+    window.open(url, 'editWindow');
 }
 
 /** 标签编辑完成后，把逗号分隔的字符串拆回数组，并同步 tagsText */

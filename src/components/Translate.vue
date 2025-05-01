@@ -68,7 +68,7 @@ async function generateStory(text) {
         if (containsChinese) {
             prompt = 'Translate the following content to English:' + text
         } else {
-            prompt = 'Translate the following content to Chinese.In the translation results, keep the line breaks in English<br>:' + text
+            prompt = 'Translate the following content to Chinese.In the translation results, keep the line breaks as in English<br>:' + text
         }
 
         // Generate content
@@ -177,9 +177,18 @@ function addText() {
 
         // Remove the first four lines from the text
         text = text.replace(regex, '').trim();
+        text = text.replace(/\n/g, '<br>');
+    } else {
+        let json = JSON.parse(text)
+        item.title = json.title
+        item.from = json.from
+        item.href = json.href
+        item.tags = json.tags
+        console.log('json:', json)
+        text = json.source
     }
 
-    text = text.replace(/\n/g, '<br>');
+    
     if (text.length > 0) {
         generateStory(text).then(temp => {
             console.log('temp:', temp)

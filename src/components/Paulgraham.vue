@@ -40,7 +40,8 @@
                     <a-col :span="rowsSpan[2]" v-if="rowsShow[1]">
                         <a-typography-title :level="4">{{ articleData.title }}</a-typography-title>
                     </a-col>
-                    <a-col :span="rowsSpan[3]" :offset="!rowsShow[0] && rowsSpan[3] == 15 ? offset[2] : 0" v-if="rowsShow[2]">
+                    <a-col :span="rowsSpan[3]" :offset="!rowsShow[0] && rowsSpan[3] == 15 ? offset[2] : 0"
+                        v-if="rowsShow[2]">
                         <a-typography-paragraph :level="4">{{ articleData.date }}</a-typography-paragraph>
                     </a-col>
                 </a-row>
@@ -54,6 +55,25 @@
                     </a-col>
                     <a-col :span="rowsSpan[3]" :offset="!rowsShow[0] && rowsSpan[3] == 15 ? offset[2] : 0"
                         v-if="rowsShow[2]">
+                        <template v-if="tooltips.find(tooltip => tooltip.index == index)">
+                            <a-tooltip :title="tooltips.find(tooltip => tooltip.index == index).content"
+                                :overlay-style="{ color: 'red' }">
+                                <a-textarea lang="zh" :placeholder="item"
+                                    :style="!rowsShow[1] && rowsShow[2] ? { fontSize: '20px' } : { fontSize: '18px' }"
+                                    :value="textareaValues[index]" @update:value="value => updateTextarea(index, value)"
+                                    auto-size>
+                                </a-textarea>
+                            </a-tooltip>
+                        </template>
+                        <template v-else>
+                            <a-textarea lang="zh" :placeholder="item"
+                                :style="!rowsShow[1] && rowsShow[2] ? { fontSize: '20px' } : { fontSize: '18px' }"
+                                :value="textareaValues[index]" @update:value="value => updateTextarea(index, value)"
+                                auto-size>
+                            </a-textarea>
+                        </template>
+                    </a-col>
+                    <a-col>
                         <a-textarea lang="zh" :placeholder="item"
                             :style="!rowsShow[1] && rowsShow[2] ? { fontSize: '20px' } : { fontSize: '18px' }"
                             :value="textareaValues[index]" @update:value="value => updateTextarea(index, value)"
@@ -152,7 +172,7 @@ const rowChange = () => {
     } else if (!rowsShow[1] && rowsShow[2]) {
         // rowsSpan[0] = 0
         rowsSpan[2] = 0
-        rowsSpan[3] = 15
+        rowsSpan[3] = 24
     } else {
         // rowsSpan[0] = 6
         rowsSpan[2] = 12
@@ -378,6 +398,7 @@ const setData = async () => {
     }
 }
 
+let tooltips = ref([])
 const getArticleContent = async (para) => {
 
     para.type = 'content'
@@ -388,6 +409,40 @@ const getArticleContent = async (para) => {
     content.value = result.content;
     console.log('paul result:', articleData);
     textareaValues.value = result.translate;
+    tooltips.value = []
+    // 处理所有项以提取脚注
+    result.translate.forEach((item, index) => {
+        // 查找脚注标记，例如 [5] 或 [4]
+        const markerRegex = /\[(\d+)\]/g;
+        const matches = [...item.matchAll(markerRegex)];
+
+        if (matches.length > 0) {
+            // 获取每个脚注标记
+            for (const match of matches) {
+                const footnoteMarker = match[0]; // 例如 [5]
+
+                // 查找对应的脚注文本
+                let footnoteText = null;
+                for (let i = result.translate.length - 1; i >= 0; i--) {
+                    if (result.translate[i].startsWith(footnoteMarker)) {
+                        footnoteText = result.translate[i];
+                        break;
+                    }
+                }
+
+                if (footnoteText) {
+                    let tooltip = {
+                        index: index,
+                        marker: footnoteMarker,
+                        content: footnoteText,
+                        position: match.index
+                    };
+
+                    tooltips.value.push(tooltip);
+                }
+            }
+        }
+    });
 }
 
 const getData = async (para) => {
@@ -473,12 +528,13 @@ const getWebInfo = async (para) => {
 
         // 获取日期 - 通常是font标签内的第一个文本节点
         let fontContent = fontElement.innerHTML;
-        // if (fontContent.length < 1000) {
+        console.log('fontContent length is:', fontContent.length)
+        if (fontContent.length < 500) {
 
-        //     fontElement = lastTdElement.querySelector('p>font')
-        //     fontContent = fontElement.innerHTML
-        //     message.info('内容太少，重新获取' + fontContent.length)
-        // }
+            fontElement = lastTdElement.querySelector('p>font')
+            fontContent = fontElement.innerHTML
+            message.info('内容太少，重新获取' + fontContent.length)
+        }
         const dateMatch = fontContent.match(/^([A-Za-z]+\s+\d{4})<br><br>/);
         const date = dateMatch ? dateMatch[1] : '';
 
@@ -581,26 +637,17 @@ const data = ``
 }
 
 /* 中等屏幕 */
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 168px) {
     .responsive-container {
-        width: 90%;
-        max-width: 750px;
-    }
-}
-
-/* 大屏幕 */
-@media screen and (min-width: 992px) {
-    .responsive-container {
-        width: 80%;
-        max-width: 900px;
+        width: 100%;
     }
 }
 
 /* 超大屏幕 */
-@media screen and (min-width: 1200px) {
+@media screen and (min-width: 800px) {
     .responsive-container {
-        width: 1000px;
-        max-width: 1300px;
+        width: 700px;
+        max-width: 800px;
     }
 }
 </style>

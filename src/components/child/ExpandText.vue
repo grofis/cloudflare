@@ -24,6 +24,7 @@ const props = defineProps({
 const isExpanded = ref(false);
 
 function toggleExpand() {
+    console.log('toggleExpand:', isExpanded.value)
     isExpanded.value = !isExpanded.value;
 }
 </script>
