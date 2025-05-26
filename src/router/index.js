@@ -21,6 +21,7 @@ import HackerNews from '../components/HackerNews.vue'
 import KeyValue from '../components/KeyValue.vue'
 import ValueDetails from '../components/ValueDetails.vue'
 import ValueEdit from '../components/ValueEdit.vue'
+import TwitterVideo from '../components/TwitterVideo.vue'
 const routes = [
 
   {
@@ -128,6 +129,11 @@ const routes = [
     path: '/edit',
     name: 'ValueEdit',
     component: ValueEdit
+  },
+  {
+    path: '/video',
+    name: 'TwitterVideo',
+    component: TwitterVideo
   }
 ]
 
