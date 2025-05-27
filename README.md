@@ -4,6 +4,9 @@
 # 运行
 npm run dev
 
+# git拉取代码命令
+git pull
+
 # git提交代码命令
 git add .
 git commit -m "你的提交信息"
