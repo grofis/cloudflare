@@ -12,11 +12,11 @@
                             <template #author>
                                 <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                                     <span style="font-weight: bold;">{{ item.sender.name
-                                    }}</span>
+                                        }}</span>
                                 </a>
                                 <span style="font-weight: bold;" v-show="hoverId === item.id"> @{{
                                     item.sender.screen_name
-                                }}</span>
+                                    }}</span>
                             </template>
                             <template #content>
                                 <span v-show="hoverId === item.id">
@@ -54,11 +54,11 @@
                             <template #author>
                                 <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                                     <span style="font-weight: bold;">{{ item.sender.name
-                                    }}</span>
+                                        }}</span>
                                 </a>
                                 <span style="font-weight: bold;" v-show="hoverId === item.id"> @{{
                                     item.sender.screen_name
-                                }}</span>
+                                    }}</span>
                             </template>
                             <template #content>
                                 <span v-show="hoverId === item.id">
@@ -125,7 +125,7 @@ onMounted(() => {
 async function getLaestTweets() {
     const url = `${import.meta.env.VITE_API_URL}/x/get`
 
-
+    console.log('url is:', url)
     // 使用 try-catch 处理超时错误
     try {
         let para = {
