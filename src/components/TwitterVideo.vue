@@ -76,48 +76,52 @@ onMounted(() => {
 });
 
 async function getLaestTweets() {
-    // const url = `${import.meta.env.VITE_API_URL}/x/search`
-    const url = `http://localhost:3000/x/search`
-    let para = {
-        username: "from:AMAZlNGNATURE OR from:TheFigen_ OR from:PicturesFoIder OR from:crazyclips_ OR from:Yoda4ever OR from:Thebestfigen",
-        count: 200,
-        type: "Latest"
-    }
-    let options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(para),
-        // 设置超时选项
-        signal: AbortSignal.timeout(20000), // 20秒超时
-    }
+    const url = `${import.meta.env.VITE_API_URL}/x/get`
 
     // 使用 try-catch 处理超时错误
     try {
+        let para = {
+            key: 'list',
+            type: 'list'
+        }
+        let options = {
+            method: 'POST', // 指定请求方法为 POST
+            headers: {
+                'Content-Type': 'application/json', // 设置请求头，指明发送的数据格式
+            },
+            body: JSON.stringify(para), // 将数据对象转换为 JSON 字符串
+        }
+
         const response = await fetch(url, options);
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error('Network response was not ok');
         }
-        const data = await response.json();
 
-        if (data.data.length > 0) {
-            if (Array.isArray(data.data)) {
-                data.data.forEach((item, idx) => {
+        const data = await response.json();
+        console.log(data)
+        if (data.length > 0) {
+            if (Array.isArray(data)) {
+                data.forEach((item, idx) => {
 
                     let temp = { ...item }
 
-                    temp.sender = item.sender;
-                    temp.sender.created_at = createdTime(temp.sender.created_at);
-                    temp.actions = [
-                        { icon: BookOutlined, text: item.bookmark_count },      // 收藏
-                        { icon: CommentOutlined, text: item.quote_count },      // 引用/带评论转推
-                        { icon: HeartOutlined, text: item.favorite_count },     // 喜欢/点赞
-                        { icon: MessageOutlined, text: item.reply_count },      // 回复
-                        { icon: RetweetOutlined, text: item.retweet_count },    // 转推
-                    ]
+                    try {
+                        temp.sender = item.sender;
+                        temp.sender.created_at = createdTime(temp.sender.created_at);
+                        temp.actions = [
+                            { icon: BookOutlined, text: item.bookmark_count },      // 收藏
+                            { icon: CommentOutlined, text: item.quote_count },      // 引用/带评论转推
+                            { icon: HeartOutlined, text: item.favorite_count },     // 喜欢/点赞
+                            { icon: MessageOutlined, text: item.reply_count },      // 回复
+                            { icon: RetweetOutlined, text: item.retweet_count },    // 转推
+                        ]
 
-                    temp.created_at = createdTime(item.created_at);
+                        temp.created_at = createdTime(item.created_at);
+                    } catch (error) {
+                        console.log(error)
+                        console.log('item is:\n', item)
+                    }
+
 
                     if (idx % 2 === 0) {
                         leftData.push(temp);
