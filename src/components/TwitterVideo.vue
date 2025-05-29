@@ -98,7 +98,7 @@ import moment from 'moment';
 const leftData = reactive([]);
 const rightData = reactive([]);
 const hoverId = ref('')
-const type = ref(['Bookmark'])
+const type = ref(['Search'])
 const typeOptions = [
     {
         label: '书签',
