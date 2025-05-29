@@ -34,6 +34,8 @@ export default defineConfig({
     }
   },
   server: {
+    host: '0.0.0.0', // 或 host: '0.0.0.0'
+    port: 5173,
     headers: {
       'Cache-Control': 'no-store',
     }

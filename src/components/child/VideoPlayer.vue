@@ -1,11 +1,12 @@
 <template>
     <div class="video-container">
         <!-- 封面图 -->
-        <a-image v-if="!isPlaying[data.id] && !isLoading[data.id]" width="100%" :src="data.image_url" :preview="false"
-            @click="() => startLoad(data.id)" />
+        <a-image v-if="(!isPlaying[data.id] && !isLoading[data.id])" width="100%" :src="data.image_url"
+            :preview="!data.video_url || data.video_url.length < 1" @click="imageClick" />
 
         <!-- 加载中 (点击可取消) -->
-        <div v-if="isLoading[data.id]" class="loading-wrapper" @click="() => cancelLoad(data.id)">
+        <div v-if="isLoading[data.id] && data.video_url && data.video_url.length > 0" class="loading-wrapper"
+            @click="() => cancelLoad(data.id)">
             <a-image width="100%" :src="data.image_url" :preview="false" />
             <div class="loading-mask">
                 <a-spin size="large" />
@@ -14,7 +15,8 @@
         </div>
 
         <!-- 视频 -->
-        <video :ref="el => videoRefs[data.id] = el" :src="data.video_url" controls preload="auto"
+        <video v-if="isVideoVisible[data.id] && data.video_url && data.video_url.length > 0"
+            :ref="el => videoRefs[data.id] = el" :src="data.video_url" controls preload="auto"
             :class="{ 'video-hidden': !isPlaying[data.id] }" style="width: 100%"
             @loadeddata="() => handleLoadedData(data.id)" @canplay="() => handleCanPlay(data.id)"
             @pause="() => handlePause(data.id)" @ended="() => handleEnded(data.id)" />
@@ -22,7 +24,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps } from 'vue';
+import { ref, defineProps, nextTick } from 'vue';
 
 const props = defineProps({
     data: {
@@ -32,16 +34,28 @@ const props = defineProps({
 })
 
 const { data } = props;
-console.log('palyer data:', JSON.stringify(data));
+// console.log('palyer data:', JSON.stringify(data));
 
 const isPlaying = ref({});
 const isLoading = ref({});
 const videoRefs = ref({});
+const isVideoVisible = ref({});
+
+const imageClick = () => {
+    if (data.video_url && data.video_url.length > 0) {
+        isVideoVisible[data.id] = true
+        startLoad(data.id)
+    }
+}
 
 const startLoad = (id) => {
     isLoading.value[id] = true;
+    isVideoVisible.value[id] = true;
+    console.log(id, '开始加载')
+    // await nextTick(); // 等待DOM更新
     // 开始加载视频
     if (videoRefs.value[id]) {
+        console.log(id, 'load')
         videoRefs.value[id].load();
     }
 };

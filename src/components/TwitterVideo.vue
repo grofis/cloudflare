@@ -1,68 +1,94 @@
 <template>
-    <a-row>
-        <a-col :span="12">
-            <a-row>
-                <a-col :span="24" style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;" v-for="item in leftData"
-                    :key="item.id">
-                    <a-comment :avatar="item.sender.avatar" :content="item.sender.description">
-                        <template #author>
-                            <span style="font-weight: bold;">{{ item.sender.name }}</span>
-                            <span style="font-weight: bold;"> @{{ item.sender.screen_name }}</span>
-                        </template>
-                        <template #datetime>
-                            <span style="color: #888;">
-                                {{ item.sender.created_at }}注册
-                                {{ item.sender.statuses_count }}推文
-                                {{ item.sender.followers_count }}关注
-                            </span>
-                        </template>
-                    </a-comment>
-                    <a :href="item.href" target="_blank"><a-typography-text strong>
-                            {{ item.full_text }}
-                        </a-typography-text></a>
-                    <a-typography-text type="secondary">
-                        {{ item.created_at }}
-                    </a-typography-text>
-                    <VideoPlayer :data="item" />
-                    <span v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px;">
-                        <component :is="icon" />
-                        {{ text }}
-                    </span>
-                </a-col>
-            </a-row>
-        </a-col>
-        <a-col :span="12">
-            <a-row>
-                <a-col :span="24" v-for="item in rightData"
-                    style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;" :key="item.id">
-                    <a-comment :avatar="item.sender.avatar" :content="item.sender.description">
-                        <template #author>
-                            <span style="font-weight: bold;">{{ item.sender.name }}</span>
-                            <span style="font-weight: bold;"> @{{ item.sender.screen_name }}</span>
-                        </template>
-                        <template #datetime>
-                            <span style="color: #888;">
-                                {{ item.sender.created_at }}注册
-                                {{ item.sender.statuses_count }}推文
-                                {{ item.sender.followers_count }}关注
-                            </span>
-                        </template>
-                    </a-comment>
-                    <a :href="item.href" target="_blank"><a-typography-text strong>
-                            {{ item.full_text }}
-                        </a-typography-text></a>
-                    <a-typography-text type="secondary">
-                        {{ item.created_at }}
-                    </a-typography-text>
-                    <VideoPlayer :data="item" />
-                    <span v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px;">
-                        <component :is="icon" />
-                        {{ text }}
-                    </span>
-                </a-col>
-            </a-row>
-        </a-col>
-    </a-row>
+    <div>
+        <a-checkbox-group v-model:value="type" :options="typeOptions" @change="typeChange" />
+
+        <a-row>
+            <a-col :span="12">
+                <a-row>
+                    <a-col :span="24" style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;"
+                        v-for="item in leftData" :key="item.id" @mouseenter="() => { hoverId = item.id }"
+                        @mouseleave="() => { hoverId = '' }">
+                        <a-comment :avatar="item.sender.avatar">
+                            <template #author>
+                                <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
+                                    <span style="font-weight: bold;">{{ item.sender.name
+                                    }}</span>
+                                </a>
+                                <span style="font-weight: bold;" v-show="hoverId === item.id"> @{{
+                                    item.sender.screen_name
+                                }}</span>
+                            </template>
+                            <template #content>
+                                <span v-show="hoverId === item.id">
+                                    {{ item.sender.description }}
+                                </span>
+                            </template>
+                            <template #datetime>
+                                <span style="color: #888;">
+                                    {{ item.sender.created_at }}注册
+                                    {{ item.sender.statuses_count }}推文
+                                    {{ item.sender.followers_count }}关注
+                                </span>
+                            </template>
+                        </a-comment>
+                        <a :href="item.href" target="_blank"><a-typography-text strong>
+                                {{ item.full_text }}
+                            </a-typography-text></a>
+                        <a-typography-text type="secondary">
+                            {{ item.created_at }}
+                        </a-typography-text>
+                        <VideoPlayer :data="item" />
+                        <span v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px;">
+                            <component :is="icon" />
+                            {{ text }}
+                        </span>
+                    </a-col>
+                </a-row>
+            </a-col>
+            <a-col :span="12">
+                <a-row>
+                    <a-col :span="24" v-for="item in rightData"
+                        style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;" :key="item.id"
+                        @mouseenter="() => { hoverId = item.id }" @mouseleave="() => { hoverId = '' }">
+                        <a-comment :avatar="item.sender.avatar">
+                            <template #author>
+                                <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
+                                    <span style="font-weight: bold;">{{ item.sender.name
+                                    }}</span>
+                                </a>
+                                <span style="font-weight: bold;" v-show="hoverId === item.id"> @{{
+                                    item.sender.screen_name
+                                }}</span>
+                            </template>
+                            <template #content>
+                                <span v-show="hoverId === item.id">
+                                    {{ item.sender.description }}
+                                </span>
+                            </template>
+                            <template #datetime>
+                                <span style="color: #888;">
+                                    {{ item.sender.created_at }}注册
+                                    {{ item.sender.statuses_count }}推文
+                                    {{ item.sender.followers_count }}关注
+                                </span>
+                            </template>
+                        </a-comment>
+                        <a :href="item.href" target="_blank"><a-typography-text strong>
+                                {{ item.full_text }}
+                            </a-typography-text></a>
+                        <a-typography-text type="secondary">
+                            {{ item.created_at }}
+                        </a-typography-text>
+                        <VideoPlayer :data="item" />
+                        <span v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px;">
+                            <component :is="icon" />
+                            {{ text }}
+                        </span>
+                    </a-col>
+                </a-row>
+            </a-col>
+        </a-row>
+    </div>
 </template>
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
@@ -71,6 +97,27 @@ import VideoPlayer from './child/VideoPlayer.vue';
 import moment from 'moment';
 const leftData = reactive([]);
 const rightData = reactive([]);
+const hoverId = ref('')
+const type = ref(['Bookmark'])
+const typeOptions = [
+    {
+        label: '书签',
+        value: 'Bookmark',
+    },
+    {
+        label: '时间线',
+        value: 'Search',
+    },
+];
+
+function typeChange(checkedValues) {
+    // checkedValues 就是最新的选中数组
+    console.log('当前选中:', checkedValues);
+    console.log(type.value)
+    // 这里可以做你需要的逻辑
+    getLaestTweets()
+}
+
 onMounted(() => {
     getLaestTweets()
 });
@@ -78,11 +125,20 @@ onMounted(() => {
 async function getLaestTweets() {
     const url = `${import.meta.env.VITE_API_URL}/x/get`
 
+
     // 使用 try-catch 处理超时错误
     try {
         let para = {
             key: 'list',
-            type: 'list'
+            type: 'list',
+            isRefresh: true
+        }
+
+        //筛选结果
+        if (type.value.length == 2 || type.value.length == 0) {
+            para.type = 'list'
+        } else {
+            para.type = type.value[0]
         }
         let options = {
             method: 'POST', // 指定请求方法为 POST
@@ -98,6 +154,8 @@ async function getLaestTweets() {
         }
 
         const data = await response.json();
+        leftData.length = 0
+        rightData.length = 0
         console.log(data)
         if (data.length > 0) {
             if (Array.isArray(data)) {
