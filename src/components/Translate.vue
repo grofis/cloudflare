@@ -1,9 +1,30 @@
 <template>
     <div>
         <div class="input-section">
-            <a-textarea v-model:value="inputText" placeholder="textarea with clear icon" @keyup.enter="addText"
-                allow-clear />
-            <button @click="addText" size="small" type="text" class="search-btn">翻译</button>
+            <a-form :model="form" layout="Horizontal" :label-col="{ style: { width: '80px' } }">
+                <a-form-item label="标题" name="title" :rules="[{ required: true, message: '请输入标题' }]">
+                    <a-input @paste="handlePaste" v-model:value="form.title" placeholder="请输入标题" allow-clear />
+                </a-form-item>
+                <a-form-item label="来源链接" name="source" :rules="[{ required: true, message: '请输入来源链接' }]">
+                    <a-input v-model:value="form.source" placeholder="请输入来源链接" allow-clear />
+                </a-form-item>
+                <a-form-item label="作者" name="author" :rules="[{ required: false, message: '请输入作者' }]">
+                    <a-input v-model:value="form.author" placeholder="请输入作者" allow-clear />
+                </a-form-item>
+                <a-form-item label="发布日期" name="date" :rules="[{ required: false, message: '请输入发布日期' }]">
+                    <a-input v-model:value="form.date" placeholder="请输入发布日期" allow-clear />
+                </a-form-item>
+                <a-form-item label="标签" name="tags" :rules="[{ required: true, message: '请输入标签信息' }]">
+                    <a-input v-model:value="form.date" placeholder="请输入标签信息，多个标签以逗号分割" allow-clear />
+                </a-form-item>
+                <a-form-item label="评论" name="tags" :rules="[{ required: true, message: '请输入评论' }]">
+                    <a-input v-model:value="form.date" placeholder="为什么保存这条信息？简短概括记忆点是什么？" allow-clear />
+                </a-form-item>
+                <a-textarea v-model:value="inputText" placeholder="textarea with clear icon" @keyup.enter="addText"
+                    allow-clear />
+                <button @click="addText" size="small" type="text" class="search-btn">翻译</button>
+            </a-form>
+
         </div>
     </div>
     <a-list item-layout="horizontal" :data-source="data">
@@ -13,7 +34,7 @@
                     <template #title>
                         <a style="font-size: 18px;" :href="item.href" target="_blank">{{ item.title }}</a>
                     </template>
-                    
+
                     <template #description>
                         <div>
                             <a-tag v-for="tag in item.tags" :key="tag">{{ tag }}</a-tag>
@@ -23,7 +44,7 @@
                         </div>
                     </template>
                 </a-list-item-meta>
-                
+
             </a-list-item>
         </template>
     </a-list>
@@ -44,6 +65,12 @@ const IconFont = createFromIconfontCN({
 
 const data = reactive([]);
 
+const form = reactive({
+    title: '',
+    author: '',
+    date: '',
+    source: ''
+})
 const inputText = ref('');
 const judgment = ref('');
 
@@ -188,7 +215,7 @@ function addText() {
         text = json.source
     }
 
-    
+
     if (text.length > 0) {
         generateStory(text).then(temp => {
             console.log('temp:', temp)
@@ -205,10 +232,37 @@ function addText() {
     console.log('text:', text)
 }
 
+function handlePaste(e) {
+  // 获取纯文本
+  const text = e.clipboardData.getData('text/plain')
+  // 获取 HTML
+  const html = e.clipboardData.getData('text/html')
+
+  // 尝试解析 HTML 中的超链接
+  let links = []
+  if (html) {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    const aTags = doc.querySelectorAll('a')
+    links = Array.from(aTags).map(a => ({
+      text: a.textContent,
+      href: a.href
+    }))
+  }
+  form.title = text
+  form.source = links[0]?.href
+  // 你可以在这里处理 text 和 links
+  console.log('纯文本:', text)
+  console.log('超链接:', links)
+
+  // 如果你不想插入原始内容，可以阻止默认粘贴行为
+  // e.preventDefault()
+  // inputValue.value = text // 或自定义插入内容
+}
+
 onMounted(() => {
     // generateStory()
     getData()
-
 });
 </script>
 
