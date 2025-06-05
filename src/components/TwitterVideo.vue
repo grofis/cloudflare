@@ -1,8 +1,20 @@
 <template>
     <div>
         <a-checkbox-group v-model:value="type" :options="typeOptions" @change="typeChange" />
-
-        <a-row>
+        <a-dropdown>
+            <a class="ant-dropdown-link" @click.prevent>
+                {{ selectedValue == 0 ? '选择时间' : selectedLabel }}
+                <DownOutlined />
+            </a>
+            <template #overlay>
+                <a-menu @click="handleMenuClick">
+                    <a-menu-item v-for="item in timeOptions" :key="item.value">
+                        <a href="javascript:;">{{ item.label }}</a>
+                    </a-menu-item>
+                </a-menu>
+            </template>
+        </a-dropdown>
+        <a-row :gutter="10">
             <a-col :span="12">
                 <a-row>
                     <a-col :span="24" style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;"
@@ -14,14 +26,19 @@
                                     <span style="font-weight: bold;">{{ item.sender.name
                                         }}</span>
                                 </a>
-                                <span style="font-weight: bold;" v-show="hoverId === item.id"> @{{
-                                    item.sender.screen_name
-                                    }}</span>
+                                <transition name="expand">
+                                    <span style="font-weight: bold;" v-show="hoverId === item.id"
+                                        class="expandable-content screen-name"> @{{
+                                            item.sender.screen_name
+                                        }}</span>
+                                </transition>
                             </template>
                             <template #content>
-                                <span v-show="hoverId === item.id">
-                                    {{ item.sender.description }}
-                                </span>
+                                <transition name="expand">
+                                    <span v-show="hoverId === item.id" class="expandable-content description">
+                                        {{ item.sender.description }}
+                                    </span>
+                                </transition>
                             </template>
                             <template #datetime>
                                 <span style="color: #888;">
@@ -37,7 +54,7 @@
                         <a-typography-text type="secondary">
                             {{ item.created_at }}
                         </a-typography-text>
-                        <VideoPlayer :data="item" />
+                        <VideoPlayer :data="item" :currentPlayingId="currentPlayingId" @play="handlePlay" />
                         <span v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px;">
                             <component :is="icon" />
                             {{ text }}
@@ -56,14 +73,19 @@
                                     <span style="font-weight: bold;">{{ item.sender.name
                                         }}</span>
                                 </a>
-                                <span style="font-weight: bold;" v-show="hoverId === item.id"> @{{
-                                    item.sender.screen_name
-                                    }}</span>
+                                <transition name="expand">
+                                    <span style="font-weight: bold;" v-show="hoverId === item.id"
+                                        class="expandable-content screen-name"> @{{
+                                            item.sender.screen_name
+                                        }}</span>
+                                </transition>
                             </template>
                             <template #content>
-                                <span v-show="hoverId === item.id">
-                                    {{ item.sender.description }}
-                                </span>
+                                <transition name="expand">
+                                    <span v-show="hoverId === item.id" class="expandable-content description">
+                                        {{ item.sender.description }}
+                                    </span>
+                                </transition>
                             </template>
                             <template #datetime>
                                 <span style="color: #888;">
@@ -79,7 +101,7 @@
                         <a-typography-text type="secondary">
                             {{ item.created_at }}
                         </a-typography-text>
-                        <VideoPlayer :data="item" />
+                        <VideoPlayer :data="item" :currentPlayingId="currentPlayingId" @play="handlePlay" />
                         <span v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px;">
                             <component :is="icon" />
                             {{ text }}
@@ -91,12 +113,14 @@
     </div>
 </template>
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, computed } from 'vue';
 import { BookOutlined, CommentOutlined, HeartOutlined, MessageOutlined, RetweetOutlined, ShareAltOutlined } from '@ant-design/icons-vue';
 import VideoPlayer from './child/VideoPlayer.vue';
 import moment from 'moment';
 const leftData = reactive([]);
 const rightData = reactive([]);
+const currentPlayingId = ref(null); // 当前正在播放的视频ID
+
 const hoverId = ref('')
 const type = ref(['Search'])
 const typeOptions = [
@@ -109,6 +133,47 @@ const typeOptions = [
         value: 'Search',
     },
 ];
+const timeOptions = [
+    {
+        label: '选择时间',
+        value: 0,
+    },
+    {
+        label: '1天内',
+        value: 1,
+    },
+    {
+        label: '3天内',
+        value: 3,
+    },
+    {
+        label: '5天内',
+        value: 5,
+    },
+    {
+        label: '一周内',
+        value: 7,
+    },
+    {
+        label: '所有',
+        value: 10000,
+    },
+];
+const selectedValue = ref('0')
+// 计算属性，自动根据 selectedValue 显示 label
+const selectedLabel = computed(() => {
+    const found = timeOptions.find(item => item.value === selectedValue.value)
+    return found ? found.label : ''
+})
+
+const handleMenuClick = (e) => {
+    selectedValue.value = e.key
+    console.log(selectedValue.value)
+    getLaestTweets()
+}
+function handlePlay(id) {
+    currentPlayingId.value = id;
+}
 
 function typeChange(checkedValues) {
     // checkedValues 就是最新的选中数组
@@ -134,11 +199,16 @@ async function getLaestTweets() {
             isRefresh: true
         }
 
+
         //筛选结果
         if (type.value.length == 2 || type.value.length == 0) {
             para.type = 'list'
         } else {
             para.type = type.value[0]
+        }
+        if (selectedValue.value != 0) {
+            para.type = 'Time'
+            para.time = selectedValue.value
         }
         let options = {
             method: 'POST', // 指定请求方法为 POST
@@ -238,5 +308,42 @@ video {
 
 :deep(.ant-comment .ant-comment-inner) {
     padding-bottom: 0;
+}
+
+.expandable-content {
+    display: block;
+    overflow: hidden;
+    /* padding: 10px 0;
+    margin: 5px 0; */
+}
+
+.expand-enter-active,
+.expand-leave-active {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 500px;
+    overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+    transform: translateY(-10px);
+}
+
+.expand-enter-to,
+.expand-leave-from {
+    max-height: 500px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 可选：为内容添加渐变效果 */
+.screen-name,
+.description {
+    display: block;
+    transition: transform 0.3s ease-out;
 }
 </style>
