@@ -48,9 +48,12 @@
                                 </span>
                             </template>
                         </a-comment>
-                        <a :href="item.href" target="_blank"><a-typography-text strong>
+                        <a :href="item.href" target="_blank">
+                            <a-typography-text :copyable="getCopyable(item)" strong>
                                 {{ item.full_text }}
-                            </a-typography-text></a>
+                            </a-typography-text>
+
+                        </a>
                         <a-typography-text type="secondary">
                             {{ item.created_at }}
                         </a-typography-text>
@@ -95,9 +98,11 @@
                                 </span>
                             </template>
                         </a-comment>
-                        <a :href="item.href" target="_blank"><a-typography-text strong>
+                        <a :href="item.href" target="_blank">
+                            <a-typography-text :copyable="getCopyable(item)" strong>
                                 {{ item.full_text }}
-                            </a-typography-text></a>
+                            </a-typography-text>
+                        </a>
                         <a-typography-text type="secondary">
                             {{ item.created_at }}
                         </a-typography-text>
@@ -180,12 +185,23 @@ function handlePlay(id) {
 
 function mouseIn(item) {
     hoverId.value = item.id
-    
+
     // if (success) {
     //     message.success('文本已复制到剪贴板');
     // } else {
     //     message.error('复制失败');
     // }
+}
+
+// 获取复制配置
+const getCopyable = (item) => {
+    return {
+        text: item.href,
+        tooltips: ['复制链接', '复制成功'],
+        onCopy: () => {
+            message.success('链接已复制到剪贴板');
+        }
+    }
 }
 
 function typeChange(checkedValues) {

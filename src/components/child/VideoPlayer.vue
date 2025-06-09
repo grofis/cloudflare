@@ -151,7 +151,7 @@ const handlePause = (id) => {
 };
 
 const handleEnded = (id) => {
-    isPlaying.value[id] = false;
+    
     if (videoRefs[id]) {
         videoRefs[id].currentTime = 0;
     }
