@@ -18,13 +18,13 @@
             <a-col :span="12">
                 <a-row>
                     <a-col :span="24" style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;"
-                        v-for="item in leftData" :key="item.id" @mouseenter="mouseIn(item.id)"
+                        v-for="item in leftData" :key="item.id" @mouseenter="mouseIn(item)"
                         @mouseleave="() => { hoverId = '' }">
                         <a-comment :avatar="item.sender.avatar">
                             <template #author>
                                 <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                                     <span style="font-weight: bold;">{{ item.sender.name
-                                    }}</span>
+                                        }}</span>
                                 </a>
                                 <transition name="expand">
                                     <span style="font-weight: bold;" v-show="hoverId === item.id"
@@ -71,7 +71,7 @@
                             <template #author>
                                 <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                                     <span style="font-weight: bold;">{{ item.sender.name
-                                    }}</span>
+                                        }}</span>
                                 </a>
                                 <transition name="expand">
                                     <span style="font-weight: bold;" v-show="hoverId === item.id"
@@ -116,6 +116,7 @@
 import { ref, onMounted, reactive, computed } from 'vue';
 import { BookOutlined, CommentOutlined, HeartOutlined, MessageOutlined, RetweetOutlined, ShareAltOutlined } from '@ant-design/icons-vue';
 import VideoPlayer from './child/VideoPlayer.vue';
+
 import moment from 'moment';
 import { message } from 'ant-design-vue';
 const leftData = reactive([]);
@@ -177,19 +178,14 @@ function handlePlay(id) {
     currentPlayingId.value = id;
 }
 
-function mouseIn(id) {
-    hoverId.value = id
-    let text = '12345'
-    // 使用 navigator.clipboard API 复制文本
-    navigator.clipboard.writeText(text)
-        .then(() => {
-            // 可以添加一个提示消息
-            // message.success('文本已复制到剪贴板');
-        })
-        .catch(err => {
-            console.error('复制失败:', err);
-            // message.error('复制失败');
-        });
+function mouseIn(item) {
+    hoverId.value = item.id
+    
+    // if (success) {
+    //     message.success('文本已复制到剪贴板');
+    // } else {
+    //     message.error('复制失败');
+    // }
 }
 
 function typeChange(checkedValues) {
