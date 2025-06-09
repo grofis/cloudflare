@@ -18,13 +18,13 @@
             <a-col :span="12">
                 <a-row>
                     <a-col :span="24" style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;"
-                        v-for="item in leftData" :key="item.id" @mouseenter="() => { hoverId = item.id }"
+                        v-for="item in leftData" :key="item.id" @mouseenter="mouseIn(item.id)"
                         @mouseleave="() => { hoverId = '' }">
                         <a-comment :avatar="item.sender.avatar">
                             <template #author>
                                 <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                                     <span style="font-weight: bold;">{{ item.sender.name
-                                        }}</span>
+                                    }}</span>
                                 </a>
                                 <transition name="expand">
                                     <span style="font-weight: bold;" v-show="hoverId === item.id"
@@ -71,7 +71,7 @@
                             <template #author>
                                 <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                                     <span style="font-weight: bold;">{{ item.sender.name
-                                        }}</span>
+                                    }}</span>
                                 </a>
                                 <transition name="expand">
                                     <span style="font-weight: bold;" v-show="hoverId === item.id"
@@ -117,6 +117,7 @@ import { ref, onMounted, reactive, computed } from 'vue';
 import { BookOutlined, CommentOutlined, HeartOutlined, MessageOutlined, RetweetOutlined, ShareAltOutlined } from '@ant-design/icons-vue';
 import VideoPlayer from './child/VideoPlayer.vue';
 import moment from 'moment';
+import { message } from 'ant-design-vue';
 const leftData = reactive([]);
 const rightData = reactive([]);
 const currentPlayingId = ref(null); // 当前正在播放的视频ID
@@ -166,6 +167,7 @@ const selectedLabel = computed(() => {
     return found ? found.label : ''
 })
 
+//时间间隔选择
 const handleMenuClick = (e) => {
     selectedValue.value = e.key
     console.log(selectedValue.value)
@@ -173,6 +175,21 @@ const handleMenuClick = (e) => {
 }
 function handlePlay(id) {
     currentPlayingId.value = id;
+}
+
+function mouseIn(id) {
+    hoverId.value = id
+    let text = '12345'
+    // 使用 navigator.clipboard API 复制文本
+    navigator.clipboard.writeText(text)
+        .then(() => {
+            // 可以添加一个提示消息
+            // message.success('文本已复制到剪贴板');
+        })
+        .catch(err => {
+            console.error('复制失败:', err);
+            // message.error('复制失败');
+        });
 }
 
 function typeChange(checkedValues) {
@@ -187,8 +204,10 @@ onMounted(() => {
     getLaestTweets()
 });
 
+//获取最新的数据
 async function getLaestTweets() {
     const url = `${import.meta.env.VITE_API_URL}/x/get`
+    // const url = 'https://sunziagent.com/x/get'
 
     console.log('url is:', url)
     // 使用 try-catch 处理超时错误
@@ -273,6 +292,7 @@ async function getLaestTweets() {
 
 }
 
+//格式化时间
 function createdTime(created_at) {
     const now = Date.now();
     const created = new Date(created_at).getTime();
