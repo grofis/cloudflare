@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="input-section">
-            <a-form :model="form" layout="Horizontal" :label-col="{ style: { width: '80px' } }">
+            <a-form :model="form" layout="horizontal" :label-col="{ style: { width: '80px' } }">
                 <a-form-item label="标题" name="title" :rules="[{ required: true, message: '请输入标题' }]">
                     <a-input @paste="handlePaste" v-model:value="data.full_text" placeholder="请输入标题" allow-clear />
                 </a-form-item>
@@ -18,13 +18,21 @@
                 <a-form-item label="评论" name="tags" :rules="[{ required: true, message: '请输入评论' }]">
                     <a-input v-model:value="data.date" placeholder="为什么保存这条信息？简短概括记忆点是什么？" allow-clear />
                 </a-form-item>
+                <a-form-item label="原贴" name="tags" :rules="[{ required: false, message: '点击跳转' }]">
+                    <a :href="data.href" target="_blank">
+                        <a-typography-text :copyable="getCopyable()" strong>
+                            {{ data.href }}
+                        </a-typography-text>
+
+                    </a>
+                </a-form-item>
+
                 <a-textarea v-model:value="inputText" placeholder="textarea with clear icon" @keyup.enter="addText"
                     allow-clear />
-                <button @click="addText" size="small" type="text" class="search-btn">翻译</button>
+                <button @click="addText" size="small" type="text" class="search-btn">添加</button>
             </a-form>
-            <a-col :span="10"  style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;"
-                :key="data.id" >         
-                <VideoPlayer :data="data" currentPlayingId="" @play="" />          
+            <a-col :span="10" style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;" :key="data.id">
+                <VideoPlayer :data="data" currentPlayingId="" @play="" />
             </a-col>
         </div>
     </div>
@@ -36,6 +44,7 @@ import { formatTimeAgo } from '@/utils/timeUtils'
 import { ref, onMounted, reactive } from 'vue';
 import moment from 'moment';
 import { useRouter } from 'vue-router';
+import { message } from 'ant-design-vue';
 import { GoogleOutlined } from '@ant-design/icons-vue';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import ExpandText from './child/ExpandText.vue';
@@ -249,6 +258,99 @@ function handlePaste(e) {
     // 如果你不想插入原始内容，可以阻止默认粘贴行为
     // e.preventDefault()
     // inputValue.value = text // 或自定义插入内容
+}
+
+// 复制提示词
+const getCopyable = () => {
+    let promt = `
+规则说明：
+视频主体信息，详细描述视频主体在干什么事情，反映出一种什么样的情绪，便于后期检索视频冗余信息.
+
+反馈信息则说明帖子截止目前，从x.com上获得的反馈数量(包含评论，转发，点赞等)。
+反馈信息模板为：发布多长时间后(截止当前时间的间隔，比如天数，小时数和分钟数和秒数，按照取大不取小的形式来，比如超过24小时就是1天，超过120分钟就是2小时…)后，获得了XX回复，XX赞，XX收藏，XX转发。
+
+针对这条帖子中的视频，返回如下的模板信息:
+主体：视频中的主体，比如人物，宠物，猫，狗，蛇等等。
+事件：视频(或图片)中的主人公在干什么？
+环境：发生的地点，比如是在屋内还是在户外，天气状况怎么样？车流人流多不多等。清晰描述视频中事件发生的环境状况。
+情绪：视频中发生的事件主要透露出什么样的情绪，比如快乐，悲伤，震惊，有趣，猎奇，偶然等，可以使用多种情绪的组合。
+反馈：发布多长时间后(截止当前时间的间隔，比如天数，小时数和分钟数和秒数，按照取大不取小的形式来，比如超过24小时就是1天，超过120分钟就是2小时…)后，获得了XX回复，XX赞，XX收藏，XX转发。
+槽点：为什么这条推文在平台上大量传播，深受推友喜爱？评论区讨论的焦点集中在哪些主题上？
+
+评论列表：
+列出其中的5条评论。根据综合指数对原贴的评论进行排序，综合指数越高排序越靠前，列出排名前5的评论。
+综合指数的计算公式是：综合指数=点赞数+回复数*3+转发数*1.5，也就是回复数量权重较高。
+评论的模板为：
+原文：如果有文字的话，把文字翻译成中文。
+翻译：原文非中文语言，需提供原文的中文翻译。
+类型：文字，图片，视频, 或者三者之间的组合，比如文字+图片，文字+图片+视频等
+反馈：发布多长时间后(截止当前时间的间隔，比如天数，小时数和分钟数和秒数，按照取大不取小的形式来，比如超过24小时就是1天，超过120分钟就是2小时…)后，获得了XX赞，XX回复，XX收藏，XX转发(评论的赞靠前)。
+
+
+返回示例：
+主体：女性歌手，视频中的主体是一位女性歌手，她是画面中的主要人物，吸引了观众的注意力。
+事件：女性歌手正在舞台上表演，她手持麦克风，穿着黑色背心和一条高开衩的牛仔裙，裙子的设计使得她在移动时不经意间露出大腿部分，疑似发生了轻微的“走光”事件。她身后有乐队成员正在演奏乐器，包括一名吉他手。歌手在表演过程中似乎并未因此受到太大影响，继续专注于演唱。
+环境：事件发生在户外的一个大型音乐会舞台上，背景显示为夜晚，舞台灯光以紫色为主，营造出音乐会的热烈氛围。舞台下方有大量观众，人流密集，观众中有穿着红色制服的工作人员，表明现场有一定的组织和安保措施。由于是夜晚，无法判断天气状况，但观众的穿着和现场气氛表明可能是一个温暖的夏夜。
+情绪：视频中透露出的情绪主要是 有趣、猎奇和偶然 的组合。有趣情绪来源于歌手裙子的高开衩设计和不经意露出的画面为视频增添了轻松幽默的元素，观众可能会觉得这一幕既意外又好笑。猎奇情绪来源于这种“走光”事件在公众场合较为少见，尤其是对于一位正在表演的歌手，满足了观众对意外事件的好奇心。偶然情绪来源于这一事件显然不是刻意安排的，属于意外情况，增加了视频的真实感和传播力。
+
+槽点：
+高情绪唤起：根据相关研究（如《The Emotions that Drive Viral Video》），高唤起情绪（如惊讶、猎奇）是视频传播的主要驱动力。这条视频中的“走光”事件恰好引发了观众的惊讶和好奇，促使他们分享。  
+娱乐性与意外性：视频捕捉到了一位歌手在舞台上的尴尬瞬间，这种意外事件具有很强的娱乐性，容易吸引观众的注意力。  
+社交媒体传播特性：视频发布在TikTok并被转发到X平台，标题“I am confused YES or NO?”制造了悬念，激发了用户的讨论欲望，增加了互动性。  
+名人效应：结合相关背景信息，这位歌手可能是Maren Morris（根据网页信息），她是一位有一定知名度的歌手，此前也因类似事件（如2024年7月的表演）受到关注，名人效应进一步助推了视频的传播。
+
+
+反馈：视频发布于2025年6月5日11:29 UTC，当前时间为2025年6月7日12:50 +08（即04:50 UTC），计算时间间隔：  
+1天17小时21分钟，时间间隔约为 2天。获得了 1,200+ 回复，12,000+ 赞，3,500+ 收藏，8,000+ 转发。  
+
+
+综合指数公式为：综合指数 = 点赞数 + 回复数*3 + 转发数*1.5。
+原文如果是非中文语言，需提供中文翻译。
+评论列表：
+评论1
+原文：
+翻译：哈哈，这裙子也太危险了吧！她还挺淡定，专业！  
+类型：文字  
+反馈：发布2天后，获得了 3,500 赞，150 回复，1,200 转发。  
+综合指数 = 3,500 + 150*3 + 1,200*1.5 = 3,500 + 450 + 1,800 = 5,750
+
+评论2
+原文：
+翻译：我去，这是什么操作？裙子开衩也太高了吧！[笑哭表情]  
+类型：文字  
+反馈：发布2天后，获得了 3,000 赞，120 回复，1,000 转发。  
+综合指数 = 3,000 + 120*3 + 1,000*1.5 = 3,000 + 360 + 1,500 = 4,860
+
+评论3
+原文：
+翻译：这视频太搞笑了，忍不住多看几遍！  
+类型：文字  
+反馈：发布2天后，获得了 2,800 赞，100 回复，900 转发。  
+综合指数 = 2,800 + 100*3 + 900*1.5 = 2,800 + 300 + 1,350 = 4,450
+
+评论4
+原文：
+翻译：她的表情好淡定，哈哈哈，给我笑死了！[视频：歌手淡定继续表演的片段]  
+类型：文字+视频  
+反馈：发布2天后，获得了 2,500 赞，90 回复，800 转发。  
+综合指数 = 2,500 + 90*3 + 800*1.5 = 2,500 + 270 + 1,200 = 3,970
+
+评论5
+原文：
+翻译: 这裙子设计有问题吧，设计师出来挨打！[图片：裙子开衩的特写] 
+类型：文字+图片  
+反馈：发布2天后，获得了 2,200 赞，80 回复，700 转发。  
+综合指数 = 2,200 + 80*3 + 700*1.5 = 2,200 + 240 + 1,050 = 3,490
+
+    
+    `
+    return {
+        text: data.value.href + "\n" + promt,
+        tooltips: ['复制链接', '复制成功'],
+        onCopy: () => {
+            message.success('链接已复制到剪贴板');
+        }
+    }
 }
 
 onMounted(() => {
