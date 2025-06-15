@@ -24,7 +24,7 @@
                             <template #author>
                                 <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                                     <span style="font-weight: bold;">{{ item.sender.name
-                                        }}</span>
+                                    }}</span>
                                 </a>
                                 <transition name="expand">
                                     <span style="font-weight: bold;" v-show="hoverId === item.id"
@@ -74,7 +74,7 @@
                             <template #author>
                                 <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                                     <span style="font-weight: bold;">{{ item.sender.name
-                                        }}</span>
+                                    }}</span>
                                 </a>
                                 <transition name="expand">
                                     <span style="font-weight: bold;" v-show="hoverId === item.id"
@@ -107,7 +107,8 @@
                             {{ item.created_at }}
                         </a-typography-text>
                         <VideoPlayer :data="item" :currentPlayingId="currentPlayingId" @play="handlePlay" />
-                        <span v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px;">
+                        <span v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px;"
+                            @click="handleActionClick(text, item)">
                             <component :is="icon" />
                             {{ text }}
                         </span>
@@ -119,9 +120,9 @@
 </template>
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue';
-import { BookOutlined, CommentOutlined, HeartOutlined, MessageOutlined, RetweetOutlined, ShareAltOutlined } from '@ant-design/icons-vue';
+import { BookOutlined, CommentOutlined, HeartOutlined, MessageOutlined, RetweetOutlined, ShareAltOutlined, MoreOutlined } from '@ant-design/icons-vue';
 import VideoPlayer from './child/VideoPlayer.vue';
-
+import { useRouter } from 'vue-router';
 import moment from 'moment';
 import { message } from 'ant-design-vue';
 const leftData = reactive([]);
@@ -273,6 +274,8 @@ async function getLaestTweets() {
                             { icon: HeartOutlined, text: item.favorite_count },     // 喜欢/点赞
                             { icon: MessageOutlined, text: item.reply_count },      // 回复
                             { icon: RetweetOutlined, text: item.retweet_count },    // 转推
+                            { icon: MoreOutlined, text: '详情' },    // 转推
+
                         ]
 
                         temp.created_at = createdTime(item.created_at);
@@ -321,6 +324,32 @@ function createdTime(created_at) {
         return `${minutes}分钟前`;
     } else {
         return `${diff}秒前`;
+    }
+}
+
+const router = useRouter();
+//action点击事件
+function handleActionClick(action, item) {
+    console.log('item is ', item)
+    const handleDetailClick = () => {
+        console.log('1 item', item)
+        // 将数据存储到 localStorage
+        localStorage.setItem('current_twitter_item', JSON.stringify(item));
+            
+        // 使用 query 而不是 params 来传递数据
+        const routeData = router.resolve({
+            name: 'TwitterDetail'
+        });
+        window.open(routeData.href, '_blank');
+    }
+    switch (action) {
+        case '详情':
+            // 处理详情点击事件
+            handleDetailClick();
+            break;
+        // 可以添加其他 action 的处理
+        default:
+            console.log('未处理的 action:', action);
     }
 }
 

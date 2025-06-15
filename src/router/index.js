@@ -22,6 +22,8 @@ import KeyValue from '../components/KeyValue.vue'
 import ValueDetails from '../components/ValueDetails.vue'
 import ValueEdit from '../components/ValueEdit.vue'
 import TwitterVideo from '../components/TwitterVideo.vue'
+import TwitterDetail from '../components/TwitterDetail.vue'
+
 const routes = [
 
   {
@@ -59,6 +61,11 @@ const routes = [
     path: '/x',
     name: 'Twitter',
     component: Twitter
+  },
+  {
+    path: '/x/detail',
+    name: 'TwitterDetail',
+    component: TwitterDetail
   },
   {
     path: '/zhihu/search',
