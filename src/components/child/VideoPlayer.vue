@@ -151,7 +151,8 @@ const handlePause = (id) => {
 };
 
 const handleEnded = (id) => {
-    
+    // 重置播放状态
+    isPlaying.value[id] = false;
     if (videoRefs[id]) {
         videoRefs[id].currentTime = 0;
     }
