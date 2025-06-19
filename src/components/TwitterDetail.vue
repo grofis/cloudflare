@@ -1,268 +1,231 @@
 <template>
-    <div>
-        <div class="input-section">
-            <a-form :model="form" layout="horizontal" :label-col="{ style: { width: '80px' } }">
-                <a-form-item label="标题" name="title" :rules="[{ required: true, message: '请输入标题' }]">
-                    <a-input @paste="handlePaste" v-model:value="data.full_text" placeholder="请输入标题" allow-clear />
-                </a-form-item>
+  <div>
+    <a-col
+      :span="24"
+      style="margin-bottom: 15px; border-bottom: 1px solid #e8e8e8"
+      :key="data.id"
+    >
+      <VideoPlayer :data="data" currentPlayingId="" />
+    </a-col>
+    <a-descriptions :title="data.full_text" :column="8">
+      <a-descriptions-item v-for="item in descbItems" :key="item.key">
+        {{ data.description[item.key] }}
+        <a-typography-text type="secondary">
+          {{ item.label }}
+        </a-typography-text>
+      </a-descriptions-item>
+    </a-descriptions>
+  </div>
+  <!-- 主体信息展示 -->
+  <div v-if="data.tagInfo">
+    <a-descriptions
+      title="视频分析"
+      bordered
+      :column="1"
+      style="margin-top: 20px"
+    >
+      <template v-for="(label, key) in mainFields" :key="key">
+        <a-descriptions-item v-if="data.tagInfo[key]" :label="label">
+          <a-typography-paragraph>
+            <a-typography-text strong>{{
+              data.tagInfo[key]
+            }}</a-typography-text>
+          </a-typography-paragraph>
+        </a-descriptions-item>
+      </template>
+    </a-descriptions>
 
-                <a-form-item label="作者" name="author" :rules="[{ required: false, message: '请输入作者' }]">
-                    <a-input v-model:value="data.sender.name" placeholder="请输入作者" allow-clear />
-                </a-form-item>
-                <a-form-item label="发布日期" name="date" :rules="[{ required: false, message: '请输入发布日期' }]">
-                    <a-input v-model:value="data.created_at" placeholder="请输入发布日期" allow-clear />
-                </a-form-item>
-                <a-form-item label="标签" name="tags" :rules="[{ required: true, message: '请输入标签信息' }]">
-                    <a-input v-model:value="data.date" placeholder="请输入标签信息，多个标签以逗号分割" allow-clear />
-                </a-form-item>
-                <a-form-item label="评论" name="tags" :rules="[{ required: true, message: '请输入评论' }]">
-                    <a-input v-model:value="data.date" placeholder="为什么保存这条信息？简短概括记忆点是什么？" allow-clear />
-                </a-form-item>
-                <a-form-item label="原贴" name="tags" :rules="[{ required: false, message: '点击跳转' }]">
-                    <a :href="data.href" target="_blank">
-                        <a-typography-text :copyable="getCopyable()" strong>
-                            {{ data.href }}
-                        </a-typography-text>
+    <!-- 评论列表 -->
+    <a-divider v-if="data.tagInfo?.comments?.length" orientation="left"
+      >用户评论</a-divider
+    >
+    <a-comment
+      v-for="(comment, index) in data.tagInfo?.comments"
+      :key="index"
+      style="margin-bottom: 16px"
+    >
+      <template #content>
+        <a-typography-paragraph>
+          {{ comment.text }}
+          <a-typography-text
+            type="secondary"
+            style="display: block; margin-top: 8px"
+          >
+            {{ comment.translate }}
+          </a-typography-text>
+        </a-typography-paragraph>
 
-                    </a>
-                </a-form-item>
+        <a-typography-paragraph type="secondary">
+          <a-tag v-if="comment.type !== 'text'" color="blue">
+            {{ comment.type }}
+          </a-tag>
+          {{ comment.feedback }}
+        </a-typography-paragraph>
+      </template>
+    </a-comment>
+    <button @click="addText" size="small" type="text" class="search-btn">
+      提交
+    </button>
+  </div>
 
-                <a-textarea v-model:value="inputText" placeholder="textarea with clear icon" @keyup.enter="addText"
-                    allow-clear />
-                <button @click="addText" size="small" type="text" class="search-btn">添加</button>
-            </a-form>
-            <a-col :span="10" style="margin-bottom: 15px;border-bottom: 1px solid #e8e8e8;" :key="data.id">
-                <VideoPlayer :data="data" currentPlayingId="" @play="" />
-            </a-col>
-        </div>
-    </div>
-
+  <a-textarea
+    v-model:value="inputText"
+    placeholder="请输入Tag信息"
+    auto-size
+    allow-clear
+    :rows="4"
+    @paste="handlePaste"
+  />
 </template>
 
 <script setup>
-import { formatTimeAgo } from '@/utils/timeUtils'
-import { ref, onMounted, reactive } from 'vue';
-import moment from 'moment';
-import { useRouter } from 'vue-router';
-import { message } from 'ant-design-vue';
-import { GoogleOutlined } from '@ant-design/icons-vue';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import ExpandText from './child/ExpandText.vue';
-import { createFromIconfontCN } from '@ant-design/icons-vue';
+import { formatTimeAgo } from "@/utils/timeUtils";
+import { ref, onMounted, reactive, computed } from "vue";
+import moment from "moment";
+import { useRouter } from "vue-router";
+import { message } from "ant-design-vue";
+import { GoogleOutlined } from "@ant-design/icons-vue";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import ExpandText from "./child/ExpandText.vue";
+import { createFromIconfontCN } from "@ant-design/icons-vue";
 const IconFont = createFromIconfontCN({
-    scriptUrl: '//at.alicdn.com/t/c/font_4603537_0l6ll6wkpcx.js',
+  scriptUrl: "//at.alicdn.com/t/c/font_4603537_0l6ll6wkpcx.js",
 });
 
-const router = useRouter()
+const router = useRouter();
 const data = ref({
-    sender: {
-        name: '',
-        screen_name: '',
-        description: '',
-        created_at: '',
-        statuses_count: 0,
-        followers_count: 0
-    }
+  sender: {
+    name: "",
+    screen_name: "",
+    description: "",
+    created_at: "",
+    statuses_count: 0,
+    followers_count: 0,
+  },
 });
 
 const form = reactive({
-    title: '',
-    author: '',
-    date: '',
-    source: ''
-})
-const inputText = ref('');
-const judgment = ref('');
+  title: "",
+  author: "",
+  date: "",
+  source: "",
+});
+const inputText = ref("");
+const judgment = ref("");
 
 async function generateStory(text) {
-    try {
-        console.log('generateStory:', import.meta.env.VITE_GOOGLE_API_KEY)
+  try {
+    console.log("generateStory:", import.meta.env.VITE_GOOGLE_API_KEY);
 
-        // Initialize the GoogleGenerativeAI with your API key
-        const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY); // Replace with your actual API key
+    // Initialize the GoogleGenerativeAI with your API key
+    const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY); // Replace with your actual API key
 
-        // Define the model and prompt
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Define the model and prompt
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // const prompt = "Write a story about a magic backpack.";
+    // const prompt = "Write a story about a magic backpack.";
 
-        console.log('addText:', text)
+    console.log("addText:", text);
 
-        // 判断是否包含中文字符
-        const containsChinese = /[\u4e00-\u9fa5]/.test(text)
-        console.log('addText:', text, 'isChinese:', containsChinese)
-        let prompt = ''
-        if (containsChinese) {
-            prompt = 'Translate the following content to English:' + text
-        } else {
-            prompt = 'Translate the following content to Chinese.In the translation results, keep the line breaks as in English<br>:' + text
-        }
-
-        // Generate content
-        const result = await model.generateContent(prompt);
-        let temp = result.response.text();
-        console.log('temp:', temp)
-        return temp
-    } catch (error) {
-        console.error('Error generating story:', error);
-        return ''
+    // 判断是否包含中文字符
+    const containsChinese = /[\u4e00-\u9fa5]/.test(text);
+    console.log("addText:", text, "isChinese:", containsChinese);
+    let prompt = "";
+    if (containsChinese) {
+      prompt = "Translate the following content to English:" + text;
+    } else {
+      prompt =
+        "Translate the following content to Chinese.In the translation results, keep the line breaks as in English<br>:" +
+        text;
     }
+
+    // Generate content
+    const result = await model.generateContent(prompt);
+    let temp = result.response.text();
+    console.log("temp:", temp);
+    return temp;
+  } catch (error) {
+    console.error("Error generating story:", error);
+    return "";
+  }
 }
 
 async function saveData(item) {
-    const url = `${import.meta.env.VITE_API_URL}/translate/set`
-    let para = {
-        key: new Date().getTime(),
-        value: item
-    }
-    let options = {
-        method: 'POST', // 指定请求方法为 POST
-        headers: {
-            'Content-Type': 'application/json', // 设置请求头，指明发送的数据格式
-        },
-        body: JSON.stringify(para), // 将数据对象转换为 JSON 字符串
-    }
+  const url = `${import.meta.env.VITE_API_URL}/translate/set`;
+  let para = {
+    key: new Date().getTime(),
+    value: item,
+  };
+  let options = {
+    method: "POST", // 指定请求方法为 POST
+    headers: {
+      "Content-Type": "application/json", // 设置请求头，指明发送的数据格式
+    },
+    body: JSON.stringify(para), // 将数据对象转换为 JSON 字符串
+  };
 
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
+  }
 }
 
 async function getData() {
-    const url = `${import.meta.env.VITE_API_URL}/translate/get`
-    let para = {
-        key: 'list',
-        type: 'list'
-    }
-    let options = {
-        method: 'POST', // 指定请求方法为 POST
-        headers: {
-            'Content-Type': 'application/json', // 设置请求头，指明发送的数据格式
-        },
-        body: JSON.stringify(para), // 将数据对象转换为 JSON 字符串
-    }
+  const url = `${import.meta.env.VITE_API_URL}/translate/get`;
+  let para = {
+    key: "list",
+    type: "list",
+  };
+  let options = {
+    method: "POST", // 指定请求方法为 POST
+    headers: {
+      "Content-Type": "application/json", // 设置请求头，指明发送的数据格式
+    },
+    body: JSON.stringify(para), // 将数据对象转换为 JSON 字符串
+  };
 
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
+  }
+  let res = await response.json();
+  console.log("getData:", res);
+  res.forEach((item) => {
+    item.time = moment(item.time).format("YYYY-MM-DD HH:mm:ss");
+    if (item.translator == "Google") {
+      item.iconFont = "icon-google";
+    } else {
+      item.iconFont = "icon-deepseek";
     }
-    let res = await response.json();
-    console.log('getData:', res)
-    res.forEach(item => {
-        item.time = moment(item.time).format('YYYY-MM-DD HH:mm:ss')
-        if (item.translator == 'Google') {
-            item.iconFont = 'icon-google'
-        } else {
-            item.iconFont = 'icon-deepseek'
-        }
-        data.push(item)
-    })
+    data.push(item);
+  });
 }
 
 async function updateHnList() {
-    const url = `${import.meta.env.VITE_API_URL}`
+  const url = `${import.meta.env.VITE_API_URL}`;
 
-    let options = {
-        method: 'POST', // 指定请求方法为 POST
-        headers: {
-            'Content-Type': 'application/json', // 设置请求头，指明发送的数据格式
-        },
-        body: JSON.stringify({}), // 将数据对象转换为 JSON 字符串
-    }
+  let options = {
+    method: "POST", // 指定请求方法为 POST
+    headers: {
+      "Content-Type": "application/json", // 设置请求头，指明发送的数据格式
+    },
+    body: JSON.stringify({}), // 将数据对象转换为 JSON 字符串
+  };
 
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
-    let res = await response.json();
-    console.log('updateHnList:', res)
-    generateStory(res).then(temp => {
-        console.log('temp:', temp)
-    })
-}
-
-function addText() {
-    let text = inputText.value.trim()
-    // console.log('addText:', text)
-
-    // // 识别文章的标题、来源、链接、标签
-    const regex = /title:\s*"([^"]+)",\s*from:\s*'([^']+)',\s*href:\s*'([^']+)',\s*tags:\s*\[([^\]]+)\],/;
-    const match = text.match(regex);
-    let item = {}
-    if (match) {
-        // Extracted information
-        item.title = match[1];
-        item.from = match[2];
-        item.href = match[3];
-        item.tags = match[4].split(',').map(tag => tag.trim().replace(/['"]/g, ''));
-
-        console.log('Title:', item.title);
-        console.log('From:', item.from);
-        console.log('Href:', item.href);
-        console.log('Tags:', item.tags);
-
-        // Remove the first four lines from the text
-        text = text.replace(regex, '').trim();
-        text = text.replace(/\n/g, '<br>');
-    } else {
-        let json = JSON.parse(text)
-        item.title = json.title
-        item.from = json.from
-        item.href = json.href
-        item.tags = json.tags
-        console.log('json:', json)
-        text = json.source
-    }
-
-
-    if (text.length > 0) {
-        generateStory(text).then(temp => {
-            console.log('temp:', temp)
-            item.source = text
-            item.translated = temp
-            item.translator = "Google"
-            item.iconFont = 'icon-google'
-            item.time = new Date().toISOString()
-            data.push(item)
-            inputText.value = ''
-            saveData(item)
-        })
-    }
-    console.log('text:', text)
-}
-
-function handlePaste(e) {
-    // 获取纯文本
-    const text = e.clipboardData.getData('text/plain')
-    // 获取 HTML
-    const html = e.clipboardData.getData('text/html')
-
-    // 尝试解析 HTML 中的超链接
-    let links = []
-    if (html) {
-        const parser = new DOMParser()
-        const doc = parser.parseFromString(html, 'text/html')
-        const aTags = doc.querySelectorAll('a')
-        links = Array.from(aTags).map(a => ({
-            text: a.textContent,
-            href: a.href
-        }))
-    }
-    form.title = text
-    form.source = links[0]?.href
-    // 你可以在这里处理 text 和 links
-    console.log('纯文本:', text)
-    console.log('超链接:', links)
-
-    // 如果你不想插入原始内容，可以阻止默认粘贴行为
-    // e.preventDefault()
-    // inputValue.value = text // 或自定义插入内容
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
+  }
+  let res = await response.json();
+  console.log("updateHnList:", res);
+  generateStory(res).then((temp) => {
+    console.log("temp:", temp);
+  });
 }
 
 // 复制提示词
 const getCopyable = () => {
-    let promt = `
+  let promt = `
     https://x.com/Yoda4ever/status/1933912319744168322
 
 规则说明：
@@ -335,59 +298,154 @@ return back data with JSON format。
 }
 }
 
-    `
+    `;
 
-    let url = `https://x.com/${data.value.sender.screen_name}/status/${data.value.id}`
+  let url = `https://x.com/${data.value.sender.screen_name}/status/${data.value.id}`;
 
+  return {
+    text: url + "\n" + promt,
+    tooltips: ["复制链接", "复制成功"],
+    onCopy: () => {
+      message.success("链接已复制到剪贴板");
+    },
+  };
+};
 
-    return {
-        text: url + "\n" + promt,
-        tooltips: ['复制链接', '复制成功'],
-        onCopy: () => {
-            message.success('链接已复制到剪贴板');
-        }
+// 中文标签映射配置
+const labelMap = {
+  created_at: "发布",
+  bookmark_count: "收藏",
+  quote_count: "引用",
+  favorite_count: "喜欢",
+  reply_count: "回复",
+  retweet_count: "转发",
+};
+
+// 动态生成描述项配置
+const descbItems = computed(() => {
+  return Object.keys(data.value.description || {})
+    .filter((key) => key !== "full_text") // 排除标题字段
+    .map((key) => ({
+      key,
+      label: labelMap[key],
+    }));
+});
+
+// 需要展示的主要字段配置（移入组件顶层）
+const mainFields = {
+  subject: "视频主体",
+  event: "事件描述",
+  environment: "环境分析",
+  emotion: "情感分析",
+  virality_factors: "传播因素",
+  feedback: "数据反馈",
+};
+
+//tag信息粘贴之后识别
+function handlePaste(e) {
+  try {
+    e.preventDefault(); // 阻止默认粘贴行为
+    // 获取粘贴的文本内容
+    const pastedText = e.clipboardData.getData("text/plain");
+
+    // 尝试解析JSON
+    const json = JSON.parse(pastedText);
+    console.log("json", json);
+    data.value.tagInfo = {
+      ...json,
+      // 对virality_factors添加换行符增强可读性
+      virality_factors:
+        json.virality_factors?.replace(/。/g, "。\n") || json.virality_factors,
+    };
+    inputText.value = "";
+    message.success("JSON解析成功");
+  } catch (error) {
+    message.error("粘贴的内容不是有效的JSON格式");
+    console.error("JSON解析错误:", error);
+  }
+}
+
+async function addText() {
+  const url = `${import.meta.env.VITE_API_URL}/x/save`;
+  console.log("url is:", url);
+  // 使用 try-catch 处理超时错误
+  try {
+    let options = {
+      method: "POST", // 指定请求方法为 POST
+      headers: {
+        "Content-Type": "application/json", // 设置请求头，指明发送的数据格式
+      },
+      body: JSON.stringify(data.value), // 将数据对象转换为 JSON 字符串
+    };
+
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
     }
+
+    const data = await response.json();
+
+    console.log("return data:", data);
+    // 处理数据...
+  } catch (error) {
+    if (error.name === "TimeoutError") {
+      console.error("请求超时");
+      // 处理超时错误...
+    } else {
+      console.error("请求失败:", error);
+      // 处理其他错误...
+    }
+  }
 }
 
 onMounted(() => {
-    // generateStory()
-    const storedData = localStorage.getItem('current_twitter_item')
-    if (storedData) {
+  // generateStory()
+  const storedData = localStorage.getItem("current_twitter_item");
+  if (storedData) {
+    let obj = JSON.parse(storedData);
+    let description = {
+      created_at: obj.created_at,
+      full_text: obj.full_text,
+      bookmark_count: obj.bookmark_count,
+      quote_count: obj.quote_count,
+      favorite_count: obj.favorite_count,
+      reply_count: obj.reply_count,
+      retweet_count: obj.retweet_count,
+    };
 
-        data.value = JSON.parse(storedData)
-        console.log('data is', data.value)
-        // 使用完后可以清除数据
-        // localStorage.removeItem('current_twitter_item')
-    }
+    data.value = { ...obj, description };
+    console.log("data is", data.value);
+    // 使用完后可以清除数据
+    // localStorage.removeItem('current_twitter_item')
+  }
 });
 </script>
 
 <style scoped>
 .input-section {
-
-    gap: 10px;
-    margin-bottom: 16px;
-    margin-top: 8px;
+  gap: 10px;
+  margin-bottom: 16px;
+  margin-top: 8px;
 }
 
 input {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 .search-btn {
-    margin-top: 10px;
-    padding: 5px 16px;
-    background-color: #42b983;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  margin-top: 10px;
+  padding: 5px 16px;
+  background-color: #42b983;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .search-btn:hover {
-    background-color: #3aa876;
+  background-color: #3aa876;
 }
 </style>
