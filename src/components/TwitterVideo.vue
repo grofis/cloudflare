@@ -66,14 +66,15 @@
               :currentPlayingId="currentPlayingId"
               @play="handlePlay"
             />
-            <span
+            <a-button
               v-for="{ icon, text } in item.actions"
               :key="icon"
               style="margin-right: 8px"
+              @click="handleActionClick(text, item)"
             >
               <component :is="icon" />
               {{ text }}
-            </span>
+            </a-button>
           </a-col>
         </a-row>
       </a-col>
