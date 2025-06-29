@@ -27,6 +27,13 @@ html {
   /* box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); */
 }
 
+/* 添加新的类用于全宽页面 */
+.full-width-page {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+}
+
 @media (min-width: 955px) {
   #app {
     max-width: 750px;
@@ -38,7 +45,7 @@ html {
   #app {
     width: 100%;
   }
-}
+} 
 
 /* 禁用页面滚动，只允许内容区域滚动 */
 body {

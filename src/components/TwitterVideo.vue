@@ -1,13 +1,9 @@
 <template>
   <div>
-    <a-checkbox-group
-      v-model:value="type"
-      :options="typeOptions"
-      @change="typeChange"
-    />
+    <a-checkbox-group v-model:value="type" :options="typeOptions" @change="typeChange" />
     <a-dropdown>
       <a class="ant-dropdown-link" @click.prevent>
-        {{ selectedValue == 0 ? "选择时间" : selectedLabel }}
+        {{ selectedTime == 0 ? "选择时间" : selectedLabel }}
         <DownOutlined />
       </a>
       <template #overlay>
@@ -21,24 +17,16 @@
     <a-row :gutter="10">
       <a-col :span="12">
         <a-row>
-          <a-col
-            :span="24"
-            style="margin-bottom: 15px; border-bottom: 1px solid #e8e8e8"
-            v-for="item in leftData"
-            :key="item.id"
-          >
+          <a-col :span="24" style="margin-bottom: 15px; border-bottom: 1px solid #e8e8e8" v-for="item in leftData"
+            :key="item.id">
             <a-comment :avatar="item.sender.avatar">
               <template #author>
-                <a
-                  :href="`https://x.com/${item.sender.screen_name}`"
-                  target="_blank"
-                >
+                <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                   <span style="font-weight: bold">{{ item.sender.name }}</span>
                 </a>
 
                 <span style="font-weight: bold" class="screen-name">
-                  @{{ item.sender.screen_name }}</span
-                >
+                  @{{ item.sender.screen_name }}</span>
               </template>
               <template #content>
                 <a-typography-text type="secondary">{{
@@ -61,17 +49,9 @@
             <a-typography-text type="secondary">
               {{ item.created_at }}
             </a-typography-text>
-            <VideoPlayer
-              :data="item"
-              :currentPlayingId="currentPlayingId"
-              @play="handlePlay"
-            />
-            <a-button
-              v-for="{ icon, text } in item.actions"
-              :key="icon"
-              style="margin-right: 8px"
-              @click="handleActionClick(text, item)"
-            >
+            <VideoPlayer :data="item" :currentPlayingId="currentPlayingId" @play="handlePlay" />
+            <a-button v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px"
+              @click="handleActionClick(text, item)">
               <component :is="icon" />
               {{ text }}
             </a-button>
@@ -80,37 +60,24 @@
       </a-col>
       <a-col :span="12">
         <a-row>
-          <a-col
-            :span="24"
-            v-for="item in rightData"
-            style="margin-bottom: 15px; border-bottom: 1px solid #e8e8e8"
-            :key="item.id"
-            @mouseenter="
+          <a-col :span="24" v-for="item in rightData" style="margin-bottom: 15px; border-bottom: 1px solid #e8e8e8"
+            :key="item.id" @mouseenter="
               () => {
                 hoverId = item.id;
               }
-            "
-            @mouseleave="
+            " @mouseleave="
               () => {
                 hoverId = '';
               }
-            "
-          >
+            ">
             <a-comment :avatar="item.sender.avatar">
               <template #author>
-                <a
-                  :href="`https://x.com/${item.sender.screen_name}`"
-                  target="_blank"
-                >
+                <a :href="`https://x.com/${item.sender.screen_name}`" target="_blank">
                   <span style="font-weight: bold">{{ item.sender.name }}</span>
                 </a>
 
-                <span
-                  style="font-weight: bold"
-                  class="expandable-content screen-name"
-                >
-                  @{{ item.sender.screen_name }}</span
-                >
+                <span style="font-weight: bold" class="expandable-content screen-name">
+                  @{{ item.sender.screen_name }}</span>
               </template>
               <template #content>
                 <a-typography-text type="secondary">{{
@@ -133,17 +100,9 @@
             <a-typography-text type="secondary">
               {{ item.created_at }}
             </a-typography-text>
-            <VideoPlayer
-              :data="item"
-              :currentPlayingId="currentPlayingId"
-              @play="handlePlay"
-            />
-            <a-button
-              v-for="{ icon, text } in item.actions"
-              :key="icon"
-              style="margin-right: 8px"
-              @click="handleActionClick(text, item)"
-            >
+            <VideoPlayer :data="item" :currentPlayingId="currentPlayingId" @play="handlePlay" />
+            <a-button v-for="{ icon, text } in item.actions" :key="icon" style="margin-right: 8px"
+              @click="handleActionClick(text, item)">
               <component :is="icon" />
               {{ text }}
             </a-button>
@@ -183,6 +142,14 @@ const typeOptions = [
     label: "时间线",
     value: "Search",
   },
+  {
+    label: "未标注",
+    value: "Unlabeled",
+  },
+  {
+    label: "视频",
+    value: "Video",
+  },
 ];
 const timeOptions = [
   {
@@ -210,17 +177,17 @@ const timeOptions = [
     value: 10000,
   },
 ];
-const selectedValue = ref("0");
-// 计算属性，自动根据 selectedValue 显示 label
+const selectedTime = ref("0");
+// 计算属性，自动根据 selectedTime 显示 label
 const selectedLabel = computed(() => {
-  const found = timeOptions.find((item) => item.value === selectedValue.value);
+  const found = timeOptions.find((item) => item.value === selectedTime.value);
   return found ? found.label : "";
 });
 
 //时间间隔选择
 const handleMenuClick = (e) => {
-  selectedValue.value = e.key;
-  console.log(selectedValue.value);
+  selectedTime.value = e.key;
+  console.log(selectedTime.value);
   getLaestTweets();
 };
 function handlePlay(id) {
@@ -247,6 +214,7 @@ const getCopyable = (item) => {
     },
   };
 };
+
 
 function typeChange(checkedValues) {
   // checkedValues 就是最新的选中数组
@@ -280,9 +248,11 @@ async function getLaestTweets() {
     } else {
       para.type = type.value[0];
     }
-    if (selectedValue.value != 0) {
+
+    //添加时间筛选
+    if (selectedTime.value != 0) {
       para.type = "Time";
-      para.time = selectedValue.value;
+      para.time = selectedTime.value;
     }
     let options = {
       method: "POST", // 指定请求方法为 POST
@@ -371,11 +341,26 @@ function createdTime(created_at) {
 const router = useRouter();
 //action点击事件
 function handleActionClick(action, item) {
+  let filterType = "list";
+  let time = 0;
+  //筛选结果
+  if (type.value.length == 2 || type.value.length == 0) {
+    filterType = "list";
+  } else {
+    filterType = type.value[0];
+  }
+
+  //添加时间筛选
+  if (selectedTime.value != 0) {
+    filterType = "Time";
+    time = selectedTime.value;
+  }
   console.log("item is ", item);
   const handleDetailClick = () => {
-    console.log("1 item", item);
+    let data = { ...item, type: filterType, time: time }
+    console.log("1 item", data);
     // 将数据存储到 localStorage
-    localStorage.setItem("current_twitter_item", JSON.stringify(item));
+    localStorage.setItem("current_twitter_item", JSON.stringify(data));
 
     // 使用 query 而不是 params 来传递数据
     const routeData = router.resolve({

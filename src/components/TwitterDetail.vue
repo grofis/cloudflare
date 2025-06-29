@@ -1,59 +1,65 @@
 <template>
-    <div>
-        <a-col :span="data.direction == 0 ? 8 : 24" :offset="data.direction == 0 ? 8 : 0"
-            style="margin-bottom: 15px; border-bottom: 1px solid #e8e8e8" :key="data.id">
-            <VideoPlayer :data="data" currentPlayingId="" />
-        </a-col>
-        <a-descriptions :title="data.full_text" :column="8">
-            <a-descriptions-item v-for="item in descbItems" :key="item.key">
-                {{ data.description[item.key] }}
-                <a-typography-text type="secondary">
-                    {{ item.label }}
-                </a-typography-text>
-            </a-descriptions-item>
-        </a-descriptions>
-        <a-typography-text :copyable="getCopyable()" strong>
-            <a :href="data.href" target="_blank">{{ data.href }}</a>
-        </a-typography-text>
-    </div>
-    <!-- 主体信息展示 -->
-    <div v-if="data.tagInfo">
-        <a-descriptions title="视频分析" bordered :column="1" style="margin-top: 20px">
-            <template v-for="(label, key) in mainFields" :key="key">
-                <a-descriptions-item v-if="data.tagInfo[key]" :label="label">
-                    <a-typography-paragraph>
-                        <a-typography-text strong>{{
-                            data.tagInfo[key]
-                            }}</a-typography-text>
-                    </a-typography-paragraph>
-                </a-descriptions-item>
-            </template>
-        </a-descriptions>
-
-        <!-- 评论列表 -->
-        <a-divider v-if="data.tagInfo?.comments?.length" orientation="left">用户评论</a-divider>
-        <a-comment v-for="(comment, index) in data.tagInfo?.comments" :key="index" style="margin-bottom: 0px">
-            <template #content>
-                <a-typography-paragraph>
-                    <a target="_blank" :href="comment.url">{{ comment.text }}</a>
-                    <a-typography-text type="secondary" style="display: block; margin-top: 2px">
-                        {{ comment.translate }}
+    <div class="full-width-page">
+        <a-row class="twitter-detail-row">
+            <a-col class="side-col left-col" @click="handleColClick(0)"></a-col>
+            <a-col class="center-col">
+                <div>
+                    <a-col :span="data.direction == 0 ? 8 : 24" :offset="data.direction == 0 ? 8 : 0"
+                        style="margin-bottom: 15px; border-bottom: 1px solid #e8e8e8" :key="data.id">
+                        <VideoPlayer :data="data" currentPlayingId="" />
+                    </a-col>
+                    <a-descriptions :title="data.full_text" :column="8">
+                        <a-descriptions-item v-for="item in descbItems" :key="item.key">
+                            {{ data.description[item.key] }}
+                            <a-typography-text type="secondary">
+                                {{ item.label }}
+                            </a-typography-text>
+                        </a-descriptions-item>
+                    </a-descriptions>
+                    <a-typography-text :copyable="getCopyable()" strong>
+                        <a :href="data.href" target="_blank">{{ data.href }}</a>
                     </a-typography-text>
-                    <a-typography-text type="secondary">
-                        <a-tag v-if="comment.type !== 'text'" color="blue">
-                            {{ comment.type }}
-                        </a-tag>
-                        {{ comment.feedback }}
-                    </a-typography-text>
-                </a-typography-paragraph>
-            </template>
-        </a-comment>
-        <button @click="addText" size="small" type="text" class="search-btn">
-            提交
-        </button>
-    </div>
+                </div>
+                <!-- 主体信息展示 -->
+                <div v-if="data.tagInfo">
+                    <a-divider orientation="left">主体信息</a-divider>
+                    <a-descriptions :column="1">
+                        <a-descriptions-item v-for="(label, key) in mainFields" :key="key" :label="label">
+                            {{ data.tagInfo[key] }}
+                        </a-descriptions-item>
+                    </a-descriptions>
 
-    <a-textarea v-model:value="inputText" placeholder="请输入Tag信息" auto-size allow-clear :rows="4" @paste="handlePaste" />
+                    <!-- 评论列表 -->
+                    <a-divider v-if="data.tagInfo?.comments?.length" orientation="left">用户评论</a-divider>
+                    <a-comment v-for="(comment, index) in data.tagInfo?.comments" :key="index"
+                        style="margin-bottom: 0px">
+                        <template #content>
+                            <a-typography-paragraph>
+                                <a target="_blank" :href="comment.url">{{ comment.text }}</a>
+                                <a-typography-text type="secondary" style="display: block; margin-top: 2px">
+                                    {{ comment.translate }}
+                                </a-typography-text>
+                                <a-typography-text type="secondary">
+                                    <a-tag v-if="comment.type !== 'text'" color="blue">
+                                        {{ comment.type }}
+                                    </a-tag>
+                                    {{ comment.feedback }}
+                                </a-typography-text>
+                            </a-typography-paragraph>
+                        </template>
+                    </a-comment>
+                    <button @click="addText" size="small" type="text" class="search-btn">
+                        提交
+                    </button>
+                </div>
+
+                <a-textarea v-model:value="inputText" placeholder="请输入Tag信息" auto-size allow-clear :rows="4"
+                    @paste="handlePaste" />
+
+            </a-col>
+            <a-col class="side-col right-col" @click="handleColClick(1)"></a-col>
+        </a-row>
+    </div>
 </template>
 
 <script setup>
@@ -170,7 +176,10 @@ async function getData() {
     }
     let res = await response.json();
     console.log("getData:", res);
-
+    if (res.data.length > 0) {
+        res.data[0].comments = JSON.parse(res.data[0].comments)
+        data.value.tagInfo = res.data[0]
+    }
 }
 
 async function updateHnList() {
@@ -245,13 +254,13 @@ url：回复帖子的链接，也就是点击这个链接可以看到这条回�
   "virality_factors": "高情绪唤起：根据相关研究（如《The Emotions that Drive Viral Video》），高唤起情绪（如惊讶、猎奇）是视频传播的主要驱动力。这条视频中的‘走光’事件恰好引发了观众的惊讶和好奇，促使他们分享。娱乐性与意外性：视频捕捉到了一位歌手在舞台上的尴尬瞬间，这种意外事件具有很强的娱乐性，容易吸引观众的注意力。社交媒体传播特性：视频发布在TikTok并被转发到X平台，标题‘I am confused YES or NO?’制造了悬念，激发了用户的讨论欲望，增加了互动性。名人效应：结合相关背景信息，这位歌手可能是Maren Morris（根据网页信息），她是一位有一定知名度的歌手，此前也因类似事件（如2024年7月的表演）受到关注，名人效应进一步助推了视频的传播。",
   "feedback": "视频发布于2025年6月5日11:29 UTC，当前时间为2025年6月7日12:50 +08（即04:50 UTC），计算时间间隔：1天17小时21分钟，时间间隔约为2天。获得了1,200+回复，12,000+赞，3,500+收藏，8,000+转发。",
   "300_keywords": [
-    "汽车", "车窗", "司机", "手势", "手", "纹身", "手臂", "手指", "中指", "和平手势", "微笑", "笑", "幽默", "互动", "回应", "表情", "脸", "眼睛", "嘴", "头", "头发", "眼镜", "衬衫", "紫色衬衫", "黑色衬衫", "红色汽车", "白色汽车", "灰色汽车", "阳光", "天空", "云", "电线杆", "道路", "得来速", "停车场", "车辆", "后视镜", "反射", "玻璃", "车窗膜", "座位", "仪表盘", "车门", "门把手", "轮子", "方向盘", "乘客", "驾驶座", "后座", "移动", "挥手", "指点", "点头", "摇晃", "转动", "看", "盯着看", "瞥一眼", "眨眼", "露齿笑", "皱眉", "惊讶", " amusement", "困惑", "理解", "同意", "不同意", "顽皮", "严肃", "放松", "紧张", "兴奋", "平静", "焦虑", "快乐", "幸福", "悲伤", "愤怒", "恐惧", "尴尬", "骄傲", "自信", "不安全", "好奇", "兴趣", "无聊", "疲劳", "能量", "专注", "分心", "集中", "意识", "反应", "反作用", "交流", "非言语", "沉默", "噪音", "背景", "前景", "视角", "角度", "缩放", "平移", "倾斜", "特写", "广角镜头", "中景", "框架", "序列", "持续时间", "时间", "瞬间", "片刻", "秒", "分钟", "小时", "天", "夜", "早上", "下午", "晚上", "天气", "温度", "热", "冷", "风", "雨", "雪", "雾", "晴朗", "明亮", "黑暗", "光", "阴影", "对比", "颜色", "黑色", "白色", "灰色", "红色", "蓝色", "绿色", "黄色", "紫色", "棕色", "橙色", "粉红色", "质地", "光滑", "粗糙", "柔软", "硬", "金属", "塑料", "织物", "皮革", "木头", "玻璃", "橡胶", "油漆", "锈", "干净", "脏", "新", "旧", "用过的", "闪亮", "暗淡", "湿", "干", "热", "冷", "温暖", "凉爽", "快", "慢", "快速", "逐渐", "突然", "连续", "断续", "规律", "不规律", "模式", "节奏", "节拍", "脉搏", "流动", "溪流", "电流", "波浪", "潮汐", "涌动", "冲", "漂移", "漂浮", "下沉", "上升", "下降", "跳", "跃", "步", "走", "跑", "冲刺", "慢跑", "爬", "爬升", "下降", "上升", "滑动", "滑倒", "绊倒", "跌倒", "恢复", "平衡", "稳定性", "不稳定性", "平衡", "不平衡", "和谐", "不和谐", "统一", "分裂", "连接", "分离", "纽带", "断裂", "加入", "分裂", "合并", "分歧", "汇聚", "见面", "分开", "问候", "告别", "你好", "再见", "欢迎", "解雇", "邀请", "排除", "包括", "接受", "拒绝", "批准", "不批准", "同意", "不同意", "确认", "否认", "承认", "拒绝", "提供", "要求", "请求", "命令", "指令", "指导", "领导", "跟随", "追逐", "逃跑", "捕获", "释放", "握住", "放手", "保留", "失去", "找到", "搜索", "发现", "揭示", "隐藏", "展示", "告诉", "听", "听到", "说话", "交谈", "低语", "喊", "尖叫", "哭", "笑", "咯咯笑", " chuckle", "窃笑", "咆哮", "嚎叫", " yelp", "吠", "喵", "叽叽喳喳", "唱歌"
+    ...
   ],
   "100_keywords": [
-    "汽车", "车窗", "司机", "手势", "手", "纹身", "手臂", "手指", "中指", "和平手势", "微笑", "笑", "幽默", "互动", "回应", "表情", "脸", "眼睛", "嘴", "头", "头发", "眼镜", "衬衫", "紫色衬衫", "黑色衬衫", "红色汽车", "白色汽车", "灰色汽车", "阳光", "天空", "云", "电线杆", "道路", "得来速", "停车场", "车辆", "后视镜", "反射", "玻璃", "车窗膜", "座位", "仪表盘", "车门", "门把手", "轮子", "方向盘", "乘客", "驾驶座", "后座", "移动", "挥手", "指点", "点头", "摇晃", "转动", "看", "盯着看", "瞥一眼", "眨眼", "露齿笑", "皱眉", "惊讶", " amusement", "困惑", "理解", "同意", "不同意", "顽皮", "严肃", "放松", "紧张", "兴奋", "平静", "焦虑", "快乐", "幸福", "悲伤", "愤怒", "恐惧", "尴尬", "骄傲", "自信", "不安全", "好奇", "兴趣", "无聊", "疲劳", "能量", "专注", "分心", "集中", "意识", "反应", "反作用", "交流", "非言语", "沉默", "噪音", "背景", "前景"
+    ...
   ],
   "30_keywords": [
-    "汽车", "车窗", "司机", "手势", "手", "纹身", "手指", "微笑", "笑", "幽默", "互动", "表情", "脸", "眼睛", "头", "衬衫", "红色汽车", "阳光", "道路", "得来速", "后视镜", "玻璃", "移动", "挥手", "指点", "点头", "惊讶", " amusement", "顽皮", "交流"
+    ...
   ],
   "comments": [
     {
@@ -309,10 +318,10 @@ url：回复帖子的链接，也就是点击这个链接可以看到这条回�
 // 中文标签映射配置
 const labelMap = {
     created_at: "发布",
-    bookmark_count: "收藏",
-    quote_count: "引用",
-    favorite_count: "喜欢",
     reply_count: "回复",
+    bookmark_count: "收藏",
+    favorite_count: "喜欢",
+    quote_count: "引用",
     retweet_count: "转发",
 };
 
@@ -411,6 +420,11 @@ async function addText() {
     }
 }
 
+function handleColClick(index) {
+    // 在这里添加点击处理逻辑
+    console.log('列被点击了', index)
+}
+
 onMounted(async () => {
     // generateStory()
     const storedData = localStorage.getItem("current_twitter_item");
@@ -438,13 +452,13 @@ onMounted(async () => {
             data.value.direction = 0
         }
         // 从本地查询数据
-        let tag = localStorage.getItem(`tag_${data.value.id}`)
-        console.log('tag:', tag)
-        if (tag) {
-            data.value.tagInfo = JSON.parse(tag)
-        } else {
-            
-        }
+        // let tag = localStorage.getItem(`tag_${data.value.id}`)
+        // console.log('tag:', tag)
+        // if (tag) {
+        //     data.value.tagInfo = JSON.parse(tag)
+        // } else {
+
+        // }
         await getData()
     }
 });
@@ -480,5 +494,43 @@ input {
 
 :deep(.ant-comment-inner) {
     padding: 5px 10px 0px 0px;
+}
+
+.twitter-detail-row {
+    display: flex;
+    width: 100%;
+}
+
+.center-col {
+    min-width: 0;
+    /* 防止内容溢出 */
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 750px;
+    margin: 0 auto;
+}
+
+.side-col {
+    flex: 1;
+    /* 平分剩余空间 */
+}
+
+/* 屏幕宽度小于等于750px时 */
+@media screen and (max-width: 750px) {
+    .side-col {
+        display: none;
+        /* 隐藏两侧列 */
+    }
+
+    .center-col {
+        width: 100%;
+    }
+}
+
+/* 屏幕宽度大于750px时 */
+@media screen and (min-width: 751px) {
+    .center-col {
+        width: 750px;
+    }
 }
 </style>
