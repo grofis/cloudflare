@@ -1,8 +1,23 @@
 <template>
     <div class="full-width-page">
+
         <a-row class="twitter-detail-row">
             <a-col class="side-col left-col" @click="handleColClick(0)"></a-col>
             <a-col class="center-col">
+                <a-checkbox-group v-model:value="type" :options="typeOptions" @change="typeChange" />
+                <a-dropdown>
+                    <a class="ant-dropdown-link" @click.prevent>
+                        {{ selectedTime == 0 ? "选择时间" : selectedLabel }}
+                        <DownOutlined />
+                    </a>
+                    <template #overlay>
+                        <a-menu @click="handleMenuClick">
+                            <a-menu-item v-for="item in timeOptions" :key="item.value">
+                                <a href="javascript:;">{{ item.label }}</a>
+                            </a-menu-item>
+                        </a-menu>
+                    </template>
+                </a-dropdown>
                 <div>
                     <a-col :span="data.direction == 0 ? 8 : 24" :offset="data.direction == 0 ? 8 : 0"
                         style="margin-bottom: 15px; border-bottom: 1px solid #e8e8e8" :key="data.id">
@@ -16,9 +31,12 @@
                             </a-typography-text>
                         </a-descriptions-item>
                     </a-descriptions>
-                    <a-typography-text :copyable="getCopyable()" strong>
-                        <a :href="data.href" target="_blank">{{ data.href }}</a>
-                    </a-typography-text>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <a-typography-text :copyable="getCopyable()" strong style="padding-right: 10px;">
+                            <a :href="data.href" target="_blank">{{ data.href }}</a>
+                        </a-typography-text>
+                        <a-checkbox-group v-model:value="like" :options="likeOptions" @change="likeChange" />
+                    </div>
                 </div>
                 <!-- 主体信息展示 -->
                 <div v-if="data.tagInfo">
@@ -134,32 +152,85 @@ async function generateStory(text) {
     }
 }
 
-async function saveData(item) {
-    const url = `${import.meta.env.VITE_API_URL}/translate/set`;
-    let para = {
-        key: new Date().getTime(),
-        value: item,
-    };
-    let options = {
-        method: "POST", // 指定请求方法为 POST
-        headers: {
-            "Content-Type": "application/json", // 设置请求头，指明发送的数据格式
-        },
-        body: JSON.stringify(para), // 将数据对象转换为 JSON 字符串
-    };
+const type = ref(["Video"]);
+const typeOptions = [
+    {
+        label: "视频",
+        value: "Video",
+    },
+];
+const timeOptions = [
+    {
+        label: "选择时间",
+        value: 0,
+    },
+    {
+        label: "1天内",
+        value: 1,
+    },
+    {
+        label: "3天内",
+        value: 3,
+    },
+    {
+        label: "5天内",
+        value: 5,
+    },
+    {
+        label: "一周内",
+        value: 7,
+    },
+    {
+        label: "所有",
+        value: 10000,
+    },
+];
+const selectedTime = ref("0");
+// 计算属性，自动根据 selectedTime 显示 label
+const selectedLabel = computed(() => {
+    const found = timeOptions.find((item) => item.value === selectedTime.value);
+    return found ? found.label : "";
+});
+//时间间隔选择
+const handleMenuClick = (e) => {
+    selectedTime.value = e.key;
+    console.log(selectedTime.value);
+    // getLaestTweets();
+};
 
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        throw new Error("Network response was not ok");
-    }
+function typeChange(checkedValues) {
+    // checkedValues 就是最新的选中数组
+    console.log("当前选中:", checkedValues);
+    console.log(type.value);
+    // 这里可以做你需要的逻辑
+    getLaestTweets();
+}
+const like = ref([]);
+const likeOptions = [
+    {
+        label: "喜欢",
+        value: "like",
+    },
+    {
+        label: "有字幕",
+        value: "subtitle",
+    },
+    {
+        label: "有水印",
+        value: "watermark",
+    },
+];
+function likeChange(checkedValues) {
+    console.log("当前选中:", checkedValues);
+
 }
 
-async function getData() {
+async function getData(id) {
     // const url = `${import.meta.env.VITE_API_URL}/x/get`;
     const url = `http://localhost:1097/x/get`;
     let para = {
-        id: data.value.id,
-        type: "key",
+        id: id,
+        type: "Key",
     };
     let options = {
         method: "POST", // 指定请求方法为 POST
@@ -175,34 +246,11 @@ async function getData() {
         throw new Error("Network response was not ok");
     }
     let res = await response.json();
+    setDataValue(res)
     console.log("getData:", res);
-    if (res.data.length > 0) {
-        res.data[0].comments = JSON.parse(res.data[0].comments)
-        data.value.tagInfo = res.data[0]
-    }
+
 }
 
-async function updateHnList() {
-    const url = `${import.meta.env.VITE_API_URL}`;
-
-    let options = {
-        method: "POST", // 指定请求方法为 POST
-        headers: {
-            "Content-Type": "application/json", // 设置请求头，指明发送的数据格式
-        },
-        body: JSON.stringify({}), // 将数据对象转换为 JSON 字符串
-    };
-
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        throw new Error("Network response was not ok");
-    }
-    let res = await response.json();
-    console.log("updateHnList:", res);
-    generateStory(res).then((temp) => {
-        console.log("temp:", temp);
-    });
-}
 
 // 复制提示词
 const getCopyable = () => {
@@ -218,18 +266,18 @@ return back data with JSON format。
 
 针对这条帖子中的视频，返回如下的模板信息:
 原文：帖子的原文信息（如果full_text不为空的话）。
-翻译：如果原文不为中文的话，返回中文翻译结果。
+翻译：内容为中文。如果原文不为中文的话，返回中文翻译结果。
 水印：视频中是否有水印，比如视频的作者信息等。0表示没有，1表示有水印。 
 文字：视频中是否有字幕或后期输入的文字，区分水印和文字。文字是视频中后期添加的字幕或情景的文字描述信息。
-主体：视频中的主体，比如人物，宠物，猫，狗，蛇等等。
-事件：视频(或图片)中的主人公在干什么？
-环境：发生的地点，比如是在屋内还是在户外，天气状况怎么样？车流人流多不多等。清晰描述视频中事件发生的环境状况。
-情绪：视频中发生的事件主要透露出什么样的情绪，比如快乐，悲伤，震惊，有趣，猎奇，偶然等，可以使用多种情绪的组合。
-反馈：发布多长时间后(截止当前时间的间隔，比如天数，小时数和分钟数和秒数，按照取大不取小的形式来，比如超过24小时就是1天，超过120分钟就是2小时…)后，获得了XX回复，XX赞，XX收藏，XX转发。
-槽点：为什么这条推文在平台上大量传播，深受推友喜爱？评论区讨论的焦点集中在哪些主题上？
-300个关键词：提炼出关于这条视频的300个关键词，主要是视频中出现的名词，动作，情绪，表情等。
-100个关键词：把以上300个关键词按重要性浓缩为100个关键词。
-30个关键词：把以上100个关键词按照重要性进一步压缩为30个关键词。
+主体：内容为中文。视频中的主体，比如人物，宠物，猫，狗，蛇等等。
+事件：内容为中文。视频(或图片)中的主人公在干什么？
+环境：内容为中文。发生的地点，比如是在屋内还是在户外，天气状况怎么样？车流人流多不多等。清晰描述视频中事件发生的环境状况。
+情绪：内容为中文。视频中发生的事件主要透露出什么样的情绪，比如快乐，悲伤，震惊，有趣，猎奇，偶然等，可以使用多种情绪的组合。
+反馈：内容为中文。发布多长时间后(截止当前时间的间隔，比如天数，小时数和分钟数和秒数，按照取大不取小的形式来，比如超过24小时就是1天，超过120分钟就是2小时…)后，获得了XX回复，XX赞，XX收藏，XX转发。
+槽点：内容为中文。为什么这条推文在平台上大量传播，深受推友喜爱？评论区讨论的焦点集中在哪些主题上？
+300个关键词：内容为中文。提炼出关于这条视频的300个关键词，主要是视频中出现的名词，动作，情绪，表情等。
+100个关键词：内容为中文。把以上300个关键词按重要性浓缩为100个关键词。
+30个关键词：内容为中文。把以上100个关键词按照重要性进一步压缩为30个关键词。
 
 评论列表：
 列出其中的5条评论。根据综合指数对原贴的评论进行排序，综合指数越高排序越靠前，列出排名前5的评论。
@@ -316,7 +364,7 @@ url：回复帖子的链接，也就是点击这个链接可以看到这条回�
 };
 
 // 中文标签映射配置
-const labelMap = {
+const descbMap = {
     created_at: "发布",
     reply_count: "回复",
     bookmark_count: "收藏",
@@ -331,7 +379,7 @@ const descbItems = computed(() => {
         .filter((key) => key !== "full_text") // 排除标题字段
         .map((key) => ({
             key,
-            label: labelMap[key],
+            label: descbMap[key],
         }));
 });
 
@@ -351,9 +399,14 @@ function handlePaste(e) {
         e.preventDefault(); // 阻止默认粘贴行为
         // 获取粘贴的文本内容
         const pastedText = e.clipboardData.getData("text/plain");
-
+        let text = pastedText.trim()
+        if (text.startsWith('```json')) {
+            text = text.replace('```json', "")
+            text = text.replace('```', "")
+            text = text.trim()
+        }
         // 尝试解析JSON
-        const json = JSON.parse(pastedText);
+        const json = JSON.parse(text);
         console.log("json", json);
         data.value.tagInfo = {
             ...json,
@@ -420,37 +473,73 @@ async function addText() {
     }
 }
 
-function handleColClick(index) {
-    // 在这里添加点击处理逻辑
-    console.log('列被点击了', index)
+async function handleColClick(index) {
+    console.log('index:', idIndex)
+    //上一条和下一条
+    if (idList && idList.length > 0) {
+        if (index == 0) {
+            if (idIndex >= 1) {
+                idIndex = idIndex - 1
+                let id = idList[idIndex]
+                console.log('id is:', id)
+                await getData(id)
+            }
+        } else {
+            if (idIndex <= idList.length - 1) {
+                idIndex = idIndex + 1
+                let id = idList[idIndex]
+                console.log('id is:', id)
+                await getData(id)
+            }
+        }
+    }
 }
 
+//格式化显示数据
+function setDataValue(obj) {
+    let description = {
+        created_at: formatTimeAgo(obj.created_at),
+        full_text: obj.full_text,
+        bookmark_count: obj.bookmark_count,
+        quote_count: obj.quote_count,
+        favorite_count: obj.favorite_count,
+        reply_count: obj.reply_count,
+        retweet_count: obj.retweet_count,
+    };
+
+    data.value = { ...obj, description };
+    if (data.value?.tagInfo?.comments) {
+        data.value.tagInfo.comments = JSON.parse(obj.tagInfo.comments)
+    }
+    // if (res.data.length > 0) {
+    //     res.data[0].comments = JSON.parse(res.data[0].comments)
+    //     data.value.tagInfo = res.data[0]
+    // }
+
+    let oriInfo = obj.extended_entities?.media[0]?.original_info
+    if (oriInfo.height > oriInfo.width) {
+        data.value.direction = 0  //竖屏
+    } else if (oriInfo.width > oriInfo.height) {
+        data.value.direction = 1
+    } else {
+        data.value.direction = 0
+    }
+}
+
+let idList = [], idIndex = -1
 onMounted(async () => {
     // generateStory()
     const storedData = localStorage.getItem("current_twitter_item");
+
     if (storedData) {
         let obj = JSON.parse(storedData);
-        let description = {
-            created_at: obj.created_at,
-            full_text: obj.full_text,
-            bookmark_count: obj.bookmark_count,
-            quote_count: obj.quote_count,
-            favorite_count: obj.favorite_count,
-            reply_count: obj.reply_count,
-            retweet_count: obj.retweet_count,
-        };
 
-        data.value = { ...obj, description };
-        console.log("data is", data.value);
 
-        let oriInfo = obj.extended_entities?.media[0]?.original_info
-        if (oriInfo.height > oriInfo.width) {
-            data.value.direction = 0  //竖屏
-        } else if (oriInfo.width > oriInfo.height) {
-            data.value.direction = 1
-        } else {
-            data.value.direction = 0
-        }
+        idList.push(...JSON.parse(localStorage.getItem(`twitter_list`)))
+        idIndex = idList.indexOf(obj.id);
+
+        setDataValue(obj)
+        await getData(obj.id)
         // 从本地查询数据
         // let tag = localStorage.getItem(`tag_${data.value.id}`)
         // console.log('tag:', tag)
@@ -459,7 +548,7 @@ onMounted(async () => {
         // } else {
 
         // }
-        await getData()
+
     }
 });
 </script>
@@ -499,6 +588,11 @@ input {
 .twitter-detail-row {
     display: flex;
     width: 100%;
+    height: 100vh;
+}
+
+.ant-dropdown-link {
+    color: #000;
 }
 
 .center-col {
@@ -512,6 +606,7 @@ input {
 
 .side-col {
     flex: 1;
+    background-color: rgba(240, 240, 240, 0.5);
     /* 平分剩余空间 */
 }
 

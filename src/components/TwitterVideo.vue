@@ -1,9 +1,9 @@
 <template>
   <div>
-    <a-checkbox-group v-model:value="type" :options="typeOptions" @change="typeChange" />
+    <a-checkbox-group v-model:value="filterParams.types" :options="typeOptions" @change="typeChange" />
     <a-dropdown>
       <a class="ant-dropdown-link" @click.prevent>
-        {{ selectedTime == 0 ? "选择时间" : selectedLabel }}
+        {{ filterParams.time == 0 ? "选择时间" : selectedLabel }}
         <DownOutlined />
       </a>
       <template #overlay>
@@ -31,7 +31,7 @@
               <template #content>
                 <a-typography-text type="secondary">{{
                   item.sender.description
-                }}</a-typography-text>
+                  }}</a-typography-text>
               </template>
               <template #datetime>
                 <span style="color: #888">
@@ -82,7 +82,7 @@
               <template #content>
                 <a-typography-text type="secondary">{{
                   item.sender.description
-                }}</a-typography-text>
+                  }}</a-typography-text>
               </template>
               <template #datetime>
                 <span style="color: #888">
@@ -125,6 +125,7 @@ import {
 } from "@ant-design/icons-vue";
 import VideoPlayer from "./child/VideoPlayer.vue";
 import { useRouter } from "vue-router";
+import { formatTimeAgo } from "../utils/timeUtils"
 import moment from "moment";
 import { message } from "ant-design-vue";
 const leftData = reactive([]);
@@ -132,7 +133,11 @@ const rightData = reactive([]);
 const currentPlayingId = ref(null); // 当前正在播放的视频ID
 
 const hoverId = ref("");
-const type = ref(["Search"]);
+const filterParams = reactive({
+  types: ["Search"],      // 多选类型
+  time: 0,                // 时间筛选
+  // 你还可以加其他筛选项
+});
 const typeOptions = [
   {
     label: "书签",
@@ -177,17 +182,17 @@ const timeOptions = [
     value: 10000,
   },
 ];
-const selectedTime = ref("0");
+
 // 计算属性，自动根据 selectedTime 显示 label
-const selectedLabel = computed(() => {
-  const found = timeOptions.find((item) => item.value === selectedTime.value);
-  return found ? found.label : "";
+const filterLabel = computed(() => {
+  const typeStr = filterParams.types.join("-");
+  const timeObj = timeOptions.find(t => t.value === filterParams.time);
+  return `${typeStr} ${timeObj ? timeObj.label : ""}`;
 });
 
 //时间间隔选择
 const handleMenuClick = (e) => {
-  selectedTime.value = e.key;
-  console.log(selectedTime.value);
+  filterParams.time = Number(e.key)
   getLaestTweets();
 };
 function handlePlay(id) {
@@ -218,8 +223,8 @@ const getCopyable = (item) => {
 
 function typeChange(checkedValues) {
   // checkedValues 就是最新的选中数组
-  console.log("当前选中:", checkedValues);
-  console.log(type.value);
+  // console.log("当前选中:", checkedValues);
+  // console.log(type.value);
   // 这里可以做你需要的逻辑
   getLaestTweets();
 }
@@ -237,23 +242,14 @@ async function getLaestTweets() {
   // 使用 try-catch 处理超时错误
   try {
     let para = {
-      key: "list",
-      type: "list",
+      type: [...filterParams.types], // 复制数组，防止被修改
+      time: filterParams.time,
       isRefresh: true,
     };
-
-    //筛选结果
-    if (type.value.length == 2 || type.value.length == 0) {
-      para.type = "list";
-    } else {
-      para.type = type.value[0];
+    if (filterParams.time !== 0 && !para.type.includes("Time")) {
+      para.type.push("Time");
     }
 
-    //添加时间筛选
-    if (selectedTime.value != 0) {
-      para.type = "Time";
-      para.time = selectedTime.value;
-    }
     let options = {
       method: "POST", // 指定请求方法为 POST
       headers: {
@@ -267,7 +263,13 @@ async function getLaestTweets() {
       throw new Error("Network response was not ok");
     }
 
-    const data = await response.json();
+    let data = await response.json();
+    console.log(`${para.type}:list`, data.ids)
+    if (data.ids) {
+      let key = `twitter_list`;
+      localStorage.setItem(key, JSON.stringify(data.ids));
+    }
+    data = data.data;
     leftData.length = 0;
     rightData.length = 0;
     console.log(data);
@@ -278,7 +280,7 @@ async function getLaestTweets() {
 
           try {
             temp.sender = item.sender;
-            temp.sender.created_at = createdTime(temp.sender.created_at);
+            temp.sender.created_at = formatTimeAgo(temp.sender.created_at);
             temp.actions = [
               { icon: BookOutlined, text: item.bookmark_count }, // 收藏
               { icon: CommentOutlined, text: item.quote_count }, // 引用/带评论转推
@@ -288,7 +290,7 @@ async function getLaestTweets() {
               { icon: MoreOutlined, text: "详情" }, // 转推
             ];
 
-            temp.created_at = createdTime(item.created_at);
+            temp.created_at = formatTimeAgo(item.created_at);
           } catch (error) {
             console.log(error);
             console.log("item is:\n", item);
@@ -315,49 +317,13 @@ async function getLaestTweets() {
   }
 }
 
-//格式化时间
-function createdTime(created_at) {
-  const now = Date.now();
-  const created = new Date(created_at).getTime();
-  const diff = Math.floor((now - created) / 1000); // 差值（秒）
-
-  if (diff >= 86400) {
-    // 1天=86400秒
-    const days = Math.floor(diff / 86400);
-    return `${days}天前`;
-  } else if (diff >= 3600) {
-    // 1小时=3600秒
-    const hours = Math.floor(diff / 3600);
-    return `${hours}小时前`;
-  } else if (diff >= 60) {
-    // 1分钟=60秒
-    const minutes = Math.floor(diff / 60);
-    return `${minutes}分钟前`;
-  } else {
-    return `${diff}秒前`;
-  }
-}
-
 const router = useRouter();
 //action点击事件
 function handleActionClick(action, item) {
-  let filterType = "list";
-  let time = 0;
-  //筛选结果
-  if (type.value.length == 2 || type.value.length == 0) {
-    filterType = "list";
-  } else {
-    filterType = type.value[0];
-  }
 
-  //添加时间筛选
-  if (selectedTime.value != 0) {
-    filterType = "Time";
-    time = selectedTime.value;
-  }
   console.log("item is ", item);
   const handleDetailClick = () => {
-    let data = { ...item, type: filterType, time: time }
+    let data = { ...item }
     console.log("1 item", data);
     // 将数据存储到 localStorage
     localStorage.setItem("current_twitter_item", JSON.stringify(data));

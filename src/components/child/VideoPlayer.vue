@@ -1,31 +1,24 @@
 <template>
+
     <div class="video-container">
         <!-- 封面图 -->
-        <a-image v-if="(!isPlaying[data.id] && !isLoading[data.id])" width="100%" :src="data.image_url"
-            :preview="!data.video_url || data.video_url.length < 1" @click="imageClick" style="border-radius: 8px;" />
-
-        <!-- 加载中 (点击可取消) -->
-        <div v-if="isLoading[data.id] && data.video_url && data.video_url.length > 0" class="loading-wrapper"
-            @click="() => cancelLoad(data.id)">
-            <a-image width="100%" :src="data.image_url" :preview="false" style="border-radius: 8px;" />
-            <div class="loading-mask">
-                <a-spin size="large" />
-                <div class="loading-text">点击取消加载</div>
-            </div>
-        </div>
+        <a-image width="100%" :src="data.image_url" :preview="!hasVideo" @click="handleCoverClick" v-if="showCover"
+            style="border-radius: 8px;" />
 
         <!-- 视频 -->
-        <video v-if="isVideoVisible[data.id] && data.video_url && data.video_url.length > 0"
-            :ref="el => videoRefs[data.id] = el" :src="data.video_url" controls preload="auto"
-            :class="{ 'video-hidden': !isPlaying[data.id] }" style="width: 100%"
-            @loadeddata="() => handleLoadedData(data.id)" @canplay="() => handleCanPlay(data.id)"
-            @pause="() => handlePause(data.id)" @ended="() => handleEnded(data.id)" />
+        <video v-else ref="videoRef" :src="data.video_url" controls preload="metadata"
+            :class="{ hidden: showCover }" style="width: 100%; border-radius: 8px; display: block;"
+            @canplay="handleCanPlay" @pause="handlePause" @play="handlePlay" @ended="handleEnded"
+            :poster="data.image_url"
+            @click.prevent="handleVideoClick" @dblclick.prevent />
     </div>
+
 </template>
 
 <script setup>
-import { ref, watch, nextTick, reactive, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 
+// Props 定义
 const props = defineProps({
     data: {
         type: Object,
@@ -34,135 +27,141 @@ const props = defineProps({
     currentPlayingId: [String, Number]
 })
 
-const { data } = props;
-// console.log('palyer data:', JSON.stringify(data));
+// Emits 定义
+const emit = defineEmits(['play'])
 
-const isPlaying = ref({});
-const isLoading = ref({});
-const videoRefs = reactive({});
-const isVideoVisible = ref({});
-const videoProgress = reactive({}); // 记录每个视频的进度
+// 响应式状态
+const showCover = ref(true)
+const isPlaying = ref(false)
+const videoRef = ref(null)
+const savedProgress = ref(0)
 
-// 监听页面可见性
+// 计算属性
+const hasVideo = computed(() =>
+    props.data.video_url && props.data.video_url.length > 0
+)
+
+// 生命周期钩子
 onMounted(() => {
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-});
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+})
 
 onBeforeUnmount(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-});
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 
-function handleVisibilityChange() {
-    if (document.hidden) {
-        pauseAllVideos();
-    }
-}
-
-// 暂停所有视频
-function pauseAllVideos() {
-    Object.values(videoRefs).forEach(video => {
-        if (video && !video.paused) {
-            video.pause();
-        }
-    });
-}
-
-// IntersectionObserver 监听视频是否可见
-function observeVideo(el, id) {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (!entry.isIntersecting) {
-                if (videoRefs[id] && !videoRefs[id].paused) {
-                    videoRefs[id].pause();
-                }
-            }
-        });
-    }, { threshold: 0.1 });
-    observer.observe(el);
-}
-
-
-const imageClick = () => {
-    if (data.video_url && data.video_url.length > 0) {
-        isVideoVisible[data.id] = true
-        startLoad(data.id)
-    }
-}
-
-const emit = defineEmits(['play']);
-const startLoad = (id) => {
-    isLoading.value[id] = true;
-    isVideoVisible.value[id] = true;
-    console.log(id, '开始加载')
-    // await nextTick(); // 等待DOM更新
-    // 开始加载视频
-    if (videoRefs[id]) {
-        console.log(id, 'load')
-        videoRefs[id].load();
-    }
-    emit('play', props.data.id);
-};
-
-const cancelLoad = (id) => {
-    isLoading.value[id] = false;
-};
-
-const handleLoadedData = (id) => {
-    console.log('视频数据已加载');
-};
-
-// 监听 currentPlayingId，切换时暂停非当前视频
+// 监听当前播放ID变化
 watch(
     () => props.currentPlayingId,
     (newId) => {
-        if (newId !== props.data.id && videoRefs[props.data.id]) {
-            videoRefs[props.data.id].pause();
-            //   videoRef.value.currentTime = 0; // 可选：重置进度
-            // videoRef.value.src = ""; // 可选：彻底停止加载
+        if (newId !== props.data.id && videoRef.value && isPlaying.value) {
+            pauseVideo()
         }
     }
-);
+)
 
-const handleCanPlay = (id) => {
-    console.log('视频可以流畅播放了');
-    // 如果还在加载状态，说明用户没有取消，可以自动播放
-    if (isLoading.value[id]) {
-        isLoading.value[id] = false;
-        isPlaying.value[id] = true;
-        // 尝试自动播放
-        if (videoRefs[id]) {
-            if (videoProgress[id]) {
-                videoRefs[id].currentTime = videoProgress[id];
-            }
-            videoRefs[id].play()
-                .catch(error => {
-                    console.error('自动播放失败:', error);
-                    // 自动播放失败时（比如浏览器策略限制），回到封面图状态
-                    isPlaying.value[id] = false;
-                    isLoading.value[id] = false;
-                });
-        }
+// 事件处理函数
+function handleCoverClick() {
+    if (hasVideo.value) {
+        showCover.value = false
+        emit('play', props.data.id)
     }
-};
+}
 
-const handlePause = (id) => {
-    isPlaying.value[id] = false;
-    videoProgress[id] = videoRefs[id].currentTime;
-};
+function handleCanPlay() {
+    const video = videoRef.value
+    if (!video) return
 
-const handleEnded = (id) => {
-    // 重置播放状态
-    isPlaying.value[id] = false;
-    if (videoRefs[id]) {
-        videoRefs[id].currentTime = 0;
+    // 恢复之前的播放进度
+    if (savedProgress.value > 0) {
+        video.currentTime = savedProgress.value
     }
-};
+
+    // 自动播放
+    video.play().then(() => {
+        isPlaying.value = true
+    }).catch(error => {
+        console.error('自动播放失败:', error)
+        // 播放失败时回到封面状态
+        showCover.value = true
+        isPlaying.value = false
+    })
+}
+
+function handlePlay() {
+    isPlaying.value = true
+}
+
+function handlePause() {
+    isPlaying.value = false
+    if (videoRef.value) {
+        savedProgress.value = videoRef.value.currentTime
+    }
+}
+
+function handleEnded() {
+    isPlaying.value = false
+    savedProgress.value = 0
+    // 播放结束后回到封面状态，不自动重播
+    showCover.value = true
+}
+
+function handleVideoClick(event) {
+    console.log('dianji')
+    // 避免点击控制条时触发
+    if (event.target.tagName !== 'VIDEO') return
+
+    const video = videoRef.value
+    if (!video) return
+
+    if (video.paused) {
+        // 视频处于暂停状态，点击播放
+        video.play()
+    } else {
+        // 视频正在播放，点击暂停
+        video.pause()
+    }
+}
+
+function handleVisibilityChange() {
+    if (document.hidden && isPlaying.value) {
+        pauseVideo()
+    }
+}
+
+function pauseVideo() {
+    if (videoRef.value && !videoRef.value.paused) {
+        videoRef.value.pause()
+    }
+}
+
+function replayVideo() {
+    const video = videoRef.value
+    if (!video) return
+
+    video.currentTime = 0
+    video.play().then(() => {
+        isPlaying.value = true
+    }).catch(error => {
+        console.error('重播失败:', error)
+    })
+}
+
 </script>
 
 <style scoped>
 .video-container {
     width: 100%;
     position: relative;
+}
+
+.hidden {
+    display: none !important;
+}
+
+video {
+    max-width: 100%;
+    height: auto;
 }
 
 .loading-wrapper {
@@ -187,9 +186,5 @@ const handleEnded = (id) => {
     margin-top: 8px;
     color: #666;
     font-size: 12px;
-}
-
-.video-hidden {
-    display: none;
 }
 </style>
